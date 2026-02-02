@@ -2,71 +2,110 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>لعبة الـ 9 مراحل</title>
+    <title>لعبة الـ 9 مراحل الحقيقية</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: Arial, sans-serif; }
-        canvas { display: block; background: #000; }
+        body { margin: 0; overflow: hidden; background: #222; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        canvas { display: block; }
         #ui {
             position: absolute; top: 20px; left: 20px;
-            color: white; font-size: 24px; pointer-events: none;
+            color: white; font-size: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
         }
     </style>
 </head>
 <body>
-    <div id="ui">المرحلة: <span id="stageNum">1</span> | <span id="stageName">البداية</span></div>
+    <div id="ui">
+        المرحلة: <span id="stageNum">1</span>/9<br>
+        الهدف: <span id="stageGoal">الوصول للمربع الأحمر</span>
+    </div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const stageNumDisplay = document.getElementById('stageNum');
-        const stageNameDisplay = document.getElementById('stageName');
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // إعدادات اللاعب
+        let player = { x: 50, y: 50, size: 30, speed: 5, color: "#fff" };
+        // إعدادات الهدف (البوابة للمرحلة التالية)
+        let goal = { x: canvas.width - 100, y: canvas.height - 100, size: 40 };
+        
         let currentStage = 1;
-        const totalStages = 9;
-        const stageNames = [
-            "البداية الأساسية", "تحدي السرعة", "منطقة العوائق", 
-            "المنصات المتحركة", "الجاذبية العكسية", "الهروب السريع", 
-            "المتاهة المظلمة", "غزو الأعداء", "مرحلة الوحش الأخير"
-        ];
+        const stageColors = ['#1abc9c', '#3498db', '#9b59b6', '#34495e', '#f1c40f', '#e67e22', '#e74c3c', '#95a5a6', '#2c3e50'];
+        
+        let keys = {};
 
-        // ألوان خلفيات المراحل التسعة
-        const stageColors = ['#1a1a1a', '#2c3e50', '#27ae60', '#2980b9', '#8e44ad', '#f39c12', '#d35400', '#c0392b', '#000000'];
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        function update() {
+            // حركة اللاعب بالأسهم
+            if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
+            if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
+            if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
+            if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
+
+            // حدود الشاشة
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+            if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
+
+            // التحقق من الوصول للهدف (الانتقال للمرحلة)
+            if (player.x < goal.x + goal.size &&
+                player.x + player.size > goal.x &&
+                player.y < goal.y + goal.size &&
+                player.y + player.size > goal.y) {
+                
+                if (currentStage < 9) {
+                    currentStage++;
+                    resetPlayer();
+                } else {
+                    alert("يا بطل! ختمت الـ 9 مراحل بنجاح!");
+                    currentStage = 1;
+                    resetPlayer();
+                }
+            }
+        }
+
+        function resetPlayer() {
+            player.x = 50;
+            player.y = 50;
+            // زيادة السرعة قليلاً في كل مرحلة لجعلها "لعبة" فعلاً
+            player.speed = 5 + currentStage;
+            stageNumDisplay.innerText = currentStage;
+        }
 
         function draw() {
-            // رسم الخلفية بناءً على المرحلة
+            // رسم الخلفية
             ctx.fillStyle = stageColors[currentStage - 1];
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // رسم نص في منتصف الشاشة
+            // رسم الهدف (المربع الأحمر)
+            ctx.fillStyle = "#ff4757";
+            ctx.fillRect(goal.x, goal.y, goal.size, goal.size);
+            ctx.strokeStyle = "white";
+            ctx.strokeRect(goal.x, goal.y, goal.size, goal.size);
+
+            // رسم اللاعب
+            ctx.fillStyle = player.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+            ctx.shadowBlur = 0;
+
+            // نص المرحلة
             ctx.fillStyle = "white";
-            ctx.font = "40px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("اضغط على الشاشة للانتقال للمرحلة التالية", canvas.width/2, canvas.height/2);
-            
-            // تحديث واجهة المستخدم
-            stageNumDisplay.innerText = currentStage;
-            stageNameDisplay.innerText = stageNames[currentStage - 1];
+            ctx.font = "20px Arial";
+            ctx.fillText("المرحلة " + currentStage, player.x - 10, player.y - 10);
+
+            requestAnimationFrame(() => {
+                update();
+                draw();
+            });
         }
-
-        // الانتقال للمرحلة التالية عند الضغط
-        window.addEventListener('mousedown', () => {
-            if (currentStage < totalStages) {
-                currentStage++;
-            } else {
-                currentStage = 1; // العودة للمرحلة الأولى
-            }
-            draw();
-        });
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            draw();
-        });
 
         draw();
     </script>
