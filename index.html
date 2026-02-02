@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eagle Level - Fix</title>
+    <title>Eagle Level - Logic Test</title>
     <style>
         body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; background: #001a33; }
         #overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); display: flex; flex-direction: column; 
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
             justify-content: center; align-items: center; color: white; z-index: 100; 
         }
         button { 
             padding: 25px 60px; font-size: 30px; cursor: pointer; border-radius: 20px; 
-            border: none; background: #e67e22; color: white; font-weight: bold;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border: none; background: #27ae60; color: white; font-weight: bold;
         }
     </style>
 </head>
 <body>
 
 <div id="overlay">
-    <h1 style="font-size: 40px; margin-bottom: 20px;">🦅 جبال النسور</h1>
-    <button id="startBtn">اضغط هنا للقفز! 🐾</button>
+    <h1 id="status">اختبار المحرك ⚙️</h1>
+    <button id="startBtn">ابدأ الاختبار الآن</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -37,78 +36,76 @@
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // تحميل الصور مع التأكد من جاهزيتها
-    const catImg = new Image(); catImg.src = 'https://img.icons8.com/color/96/cat--v1.png';
-    const eagleImg = new Image(); eagleImg.src = 'https://img.icons8.com/color/150/eagle.png';
-
     let gameActive = false;
-    let player = { x: 80, y: 0, v: 0, gravity: 0.5 };
-    let eagle = { x: -120, y: 0 };
-    let obstacles = [];
+    let p = { x: 80, y: 0, v: 0 }; // القطة (ستظهر كمربع برتقالي)
+    let e = { x: -100, y: 0 };     // النسر (سيظهر كمربع أحمر)
+    let obs = [];
 
-    // دالة التشغيل الإجبارية
-    function ignite() {
+    startBtn.onclick = function() {
         overlay.style.display = 'none';
-        player.y = canvas.height / 2;
-        eagle.y = canvas.height / 2;
+        p.y = canvas.height / 2;
+        e.y = canvas.height / 2;
+        p.v = 0;
+        obs = [];
         gameActive = true;
-        // بدء الحلقة البرمجية فوراً
-        requestAnimationFrame(update);
-    }
-
-    // ربط الزر بالتشغيل
-    startBtn.onclick = ignite;
+    };
 
     function update() {
         if (!gameActive) return;
 
-        // مسح الشاشة ورسم الخلفية
-        ctx.fillStyle = '#001a33';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 1. مسح الشاشة
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 2. الجاذبية
+        p.v += 0.5;
+        p.y += p.v;
 
-        // تحريك القطة
-        player.v += player.gravity;
-        player.y += player.v;
+        // 3. النسر (يلاحق القطة)
+        e.y += (p.y - e.y) * 0.05;
+        e.x = Math.min(p.x - 80, e.x + 0.5);
 
-        // تحريك النسر
-        eagle.y += (player.y - 80 - eagle.y) * 0.1;
-        eagle.x = Math.min(player.x - 100, eagle.x + 0.5);
-
-        // إنشاء وتحديث العقبات
-        if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 300) {
-            obstacles.push({ x: canvas.width, t: Math.random() * (canvas.height - 300) + 50, w: 60, g: 260 });
+        // 4. الحواجز (بيضاء)
+        if (obs.length === 0 || obs[obs.length - 1].x < canvas.width - 350) {
+            obs.push({ x: canvas.width, t: Math.random() * (canvas.height - 300) + 50, g: 250 });
         }
 
         ctx.fillStyle = "white";
-        obstacles.forEach((o, i) => {
-            o.x -= 6;
-            ctx.fillRect(o.x, 0, o.w, o.t);
-            ctx.fillRect(o.x, o.t + o.g, o.w, canvas.height);
-            
-            // تصادم
-            if (player.x + 30 > o.x && player.x + 10 < o.x + o.w && (player.y + 10 < o.t || player.y + 40 > o.t + o.g)) {
-                location.reload(); // إعادة تشغيل عند الخسارة
-            }
-            if (o.x < -100) obstacles.splice(i, 1);
-        });
+        for (let i = obs.length - 1; i >= 0; i--) {
+            let o = obs[i];
+            o.x -= 7;
+            // رسم الحواجز
+            ctx.fillRect(o.x, 0, 60, o.t);
+            ctx.fillRect(o.x, o.t + o.g, 60, canvas.height);
 
-        // حدود الشاشة والنسر
-        if (player.y > canvas.height || player.y < 0 || player.x < eagle.x + 50) {
-            location.reload();
+            // تصادم مع الحواجز
+            if (p.x + 40 > o.x && p.x < o.x + 60 && (p.y < o.t || p.y + 40 > o.t + o.g)) {
+                gameActive = false; location.reload();
+            }
+            if (o.x < -100) obs.splice(i, 1);
         }
 
-        // رسم الشخصيات
-        ctx.drawImage(eagleImg, eagle.x, eagle.y, 110, 110);
-        ctx.drawImage(catImg, player.x, player.y, 50, 50);
+        // 5. الموت (نسر أو سقوط)
+        if (p.y > canvas.height || p.y < 0 || p.x < e.x + 40) {
+            gameActive = false; location.reload();
+        }
+
+        // 6. رسم "القطة" (مربع برتقالي)
+        ctx.fillStyle = "#ff9800";
+        ctx.fillRect(p.x, p.y, 40, 40);
+
+        // 7. رسم "النسر" (مربع أحمر)
+        ctx.fillStyle = "#ff0000";
+        ctx.fillRect(e.x, e.y, 60, 60);
 
         requestAnimationFrame(update);
     }
 
-    // التحكم بالقفز
-    const jump = (e) => { if (gameActive) { player.v = -9; e.preventDefault(); } };
+    // القفز
+    function jump() { if (gameActive) p.v = -9; }
     window.addEventListener('mousedown', jump);
-    window.addEventListener('touchstart', jump, { passive: false });
+    window.addEventListener('touchstart', (ev) => { ev.preventDefault(); jump(); }, {passive: false});
 
+    update(); // تشغيل حلقة الرسم
 </script>
 </body>
 </html>
