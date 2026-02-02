@@ -3,19 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emergency Start - No Buttons</title>
+    <title>Eagle Level - Lightweight</title>
     <style>
-        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; }
+        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: sans-serif; }
+        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; }
         canvas { display: block; }
-        #msg { 
-            position: absolute; top: 10px; width: 100%; text-align: center; 
-            color: white; font-family: sans-serif; pointer-events: none;
-        }
     </style>
 </head>
 <body>
 
-<div id="msg"><h1>المرحلة 3: النسر (بدء تلقائي)</h1><p>اضغط في أي مكان للقفز</p></div>
+<div id="ui">
+    <h2 style="margin:0;">🦅 جبال النسور</h2>
+    <p>اضغط للقفز - (نسخة خفيفة ضد التعليق)</p>
+</div>
+
 <canvas id="G"></canvas>
 
 <script>
@@ -25,56 +26,69 @@
     function res() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
     window.addEventListener('resize', res); res();
 
-    // متغيرات بسيطة جداً لضمان العمل
-    let py = cvs.height / 2, pv = 0; // القطة
-    let ex = -100, ey = cvs.height / 2; // النسر
+    // تحميل الصور بطريقة ذكية لا تسبب تعليق
+    const imgCat = new Image(); imgCat.src = 'https://img.icons8.com/color/96/cat--v1.png';
+    const imgEagle = new Image(); imgEagle.src = 'https://img.icons8.com/color/150/eagle.png';
+
+    let py = cvs.height / 2, pv = 0; 
+    let ex = -100, ey = cvs.height / 2; 
     let pipes = [];
+    let frameCount = 0;
 
     function draw() {
-        // خلفية زرقاء غامقة
+        // تحسين الأداء: تقليل العمليات الحسابية
         c.fillStyle = '#001a33';
         c.fillRect(0, 0, cvs.width, cvs.height);
 
-        // تحريك القطة (المربع البرتقالي)
         pv += 0.5;
         py += pv;
 
-        // تحريك النسر (المربع الأحمر)
+        // حركة النسر
         ey += (py - ey) * 0.05;
         ex = Math.min(50, ex + 0.5);
 
-        // إنتاج العوائق
-        if (pipes.length === 0 || pipes[pipes.length - 1].x < cvs.width - 300) {
+        // العوائق (تظهر كل 100 إطار لتخفيف الضغط)
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < cvs.width - 320) {
             pipes.push({ x: cvs.width, h: Math.random() * (cvs.height - 300) + 50 });
         }
 
-        // رسم العوائق
         c.fillStyle = "white";
-        pipes.forEach((p, i) => {
-            p.x -= 6;
+        for (let i = pipes.length - 1; i >= 0; i--) {
+            let p = pipes[i];
+            p.x -= 5; // سرعة معتدلة
+            
             c.fillRect(p.x, 0, 50, p.h);
-            c.fillRect(p.x, p.h + 250, 50, cvs.height);
+            c.fillRect(p.x, p.h + 260, 50, cvs.height);
 
-            // تصادم مع العوائق
-            if (100 > p.x && 50 < p.x + 50 && (py < p.h || py + 40 > p.h + 250)) location.reload();
+            // تصادم مبسط جداً
+            if (90 > p.x && 50 < p.x + 50 && (py < p.h || py + 35 > p.h + 260)) {
+                resetGame();
+            }
             if (p.x < -60) pipes.splice(i, 1);
-        });
+        }
 
-        // رسم القطة والنسر
-        c.fillStyle = "#ff9800"; c.fillRect(50, py, 40, 40); // القطة
-        c.fillStyle = "#ff0000"; c.fillRect(ex, ey, 50, 50); // النسر
+        // رسم النسر (إذا لم تحمل الصورة يرسم مربع أحمر)
+        if (imgEagle.complete) c.drawImage(imgEagle, ex, ey, 100, 100);
+        else { c.fillStyle = "red"; c.fillRect(ex, ey, 60, 60); }
 
-        // الخسارة
-        if (py > cvs.height || py < 0 || 50 < ex + 40) location.reload();
+        // رسم القطة (إذا لم تحمل الصورة يرسم مربع برتقالي)
+        if (imgCat.complete) c.drawImage(imgCat, 50, py, 45, 45);
+        else { c.fillStyle = "orange"; c.fillRect(50, py, 40, 40); }
+
+        if (py > cvs.height || py < 0 || 50 < ex + 30) resetGame();
 
         requestAnimationFrame(draw);
     }
 
-    // القفز عند اللمس
-    window.onmousedown = () => { pv = -9; };
-    window.ontouchstart = (e) => { e.preventDefault(); pv = -9; };
+    function resetGame() {
+        py = cvs.height / 2; pv = 0;
+        ex = -100; ey = cvs.height / 2;
+        pipes = [];
+    }
 
-    // انطلاق المحرك تلقائياً
+    window.onmousedown = () => { pv = -8; };
+    window.ontouchstart = (e) => { e.preventDefault(); pv = -8; };
+
     draw();
 </script>
 </body>
