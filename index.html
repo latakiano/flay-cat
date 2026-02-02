@@ -2,112 +2,158 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>لعبة الـ 9 مراحل الحقيقية</title>
+    <title>لعبة القطة الطائرة - 9 مراحل</title>
     <style>
         body { margin: 0; overflow: hidden; background: #222; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        canvas { display: block; }
+        canvas { display: block; background-color: #87CEEB; /* لون سماء */ }
         #ui {
-            position: absolute; top: 20px; left: 20px;
-            color: white; font-size: 20px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px;
+            position: absolute; top: 10px; left: 10px;
+            color: white; font-size: 20px; background: rgba(0,0,0,0.6); padding: 8px; border-radius: 5px;
+            z-index: 100;
+        }
+        #stage-title {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-size: 60px; text-shadow: 3px 3px 5px rgba(0,0,0,0.7);
+            z-index: 99; display: none; /* سيظهر عند بداية كل مرحلة */
         }
     </style>
 </head>
 <body>
     <div id="ui">
-        المرحلة: <span id="stageNum">1</span>/9<br>
-        الهدف: <span id="stageGoal">الوصول للمربع الأحمر</span>
+        المرحلة: <span id="currentStageDisplay">1</span> / 9<br>
+        النقاط: <span id="scoreDisplay">0</span><br>
+        الجوائز المتبقية: <span id="prizesRemainingDisplay">0</span>
     </div>
+    <div id="stage-title">المرحلة 1</div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const stageNumDisplay = document.getElementById('stageNum');
+        const currentStageDisplay = document.getElementById('currentStageDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const prizesRemainingDisplay = document.getElementById('prizesRemainingDisplay');
+        const stageTitleElement = document.getElementById('stage-title');
 
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // إعدادات اللاعب
-        let player = { x: 50, y: 50, size: 30, speed: 5, color: "#fff" };
-        // إعدادات الهدف (البوابة للمرحلة التالية)
-        let goal = { x: canvas.width - 100, y: canvas.height - 100, size: 40 };
-        
+        let gameRunning = false;
         let currentStage = 1;
-        const stageColors = ['#1abc9c', '#3498db', '#9b59b6', '#34495e', '#f1c40f', '#e67e22', '#e74c3c', '#95a5a6', '#2c3e50'];
+        let score = 0;
+        let player = { x: 50, y: canvas.height / 2, width: 60, height: 40, dy: 0, gravity: 0.5, jumpPower: -10, onGround: false };
+        let prizes = [];
+        let enemies = []; // تشمل النسر
+        let platforms = []; // منصات للقفز عليها
         
-        let keys = {};
+        // صور (افتراضية - يمكنك استبدالها بمسارات صور حقيقية لديك)
+        const catImg = new Image();
+        catImg.src = 'https://i.imgur.com/kO8jXzI.png'; // رابط افتراضي لقطة
+        const prizeImg = new Image();
+        prizeImg.src = 'https://i.imgur.com/kO8jXzI.png'; // رابط افتراضي لجائزة (مثل نجمة)
+        const couponImg = new Image();
+        couponImg.src = 'https://i.imgur.com/kO8jXzI.png'; // رابط افتراضي لكوبون
+        const eagleImg = new Image();
+        eagleImg.src = 'https://i.imgur.com/kO8jXzI.png'; // رابط افتراضي لنسر
 
-        window.addEventListener('keydown', e => keys[e.code] = true);
-        window.addEventListener('keyup', e => keys[e.code] = false);
+        let imagesLoaded = 0;
+        const totalImages = 4; // عدد الصور التي يتم تحميلها
 
-        function update() {
-            // حركة اللاعب بالأسهم
-            if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
-            if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
-            if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
-            if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
-
-            // حدود الشاشة
-            if (player.x < 0) player.x = 0;
-            if (player.y < 0) player.y = 0;
-            if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
-            if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
-
-            // التحقق من الوصول للهدف (الانتقال للمرحلة)
-            if (player.x < goal.x + goal.size &&
-                player.x + player.size > goal.x &&
-                player.y < goal.y + goal.size &&
-                player.y + player.size > goal.y) {
-                
-                if (currentStage < 9) {
-                    currentStage++;
-                    resetPlayer();
-                } else {
-                    alert("يا بطل! ختمت الـ 9 مراحل بنجاح!");
-                    currentStage = 1;
-                    resetPlayer();
-                }
+        function imageLoadHandler() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                console.log("All images loaded!");
+                initStage(currentStage); // ابدأ اللعبة بعد تحميل الصور
+                gameRunning = true; // ابدأ حلقة اللعبة
             }
         }
 
-        function resetPlayer() {
+        catImg.onload = imageLoadHandler;
+        prizeImg.onload = imageLoadHandler;
+        couponImg.onload = imageLoadHandler;
+        eagleImg.onload = imageLoadHandler;
+
+        // دالة إنشاء المراحل
+        function initStage(stageNum) {
+            stageTitleElement.innerText = `المرحلة ${stageNum}`;
+            stageTitleElement.style.display = 'block';
+            setTimeout(() => stageTitleElement.style.display = 'none', 1500); // إخفاء العنوان بعد 1.5 ثانية
+
             player.x = 50;
-            player.y = 50;
-            // زيادة السرعة قليلاً في كل مرحلة لجعلها "لعبة" فعلاً
-            player.speed = 5 + currentStage;
-            stageNumDisplay.innerText = currentStage;
+            player.y = canvas.height / 2;
+            player.dy = 0;
+            prizes = [];
+            enemies = [];
+            platforms = [];
+            scoreDisplay.innerText = score;
+            currentStageDisplay.innerText = stageNum;
+
+            const basePrizes = 3;
+            const baseEnemies = 0;
+            const basePlatforms = 1; // منصة البداية
+
+            // إعدادات لكل مرحلة
+            switch (stageNum) {
+                case 1: // البداية: قطة وجوائز بسيطة
+                    addPrizes(basePrizes);
+                    addPlatforms(basePlatforms);
+                    break;
+                case 2: // تحدي السرعة: جوائز أكثر، حركة أسرع
+                    addPrizes(basePrizes + 2);
+                    player.gravity = 0.6;
+                    player.jumpPower = -12;
+                    addPlatforms(basePlatforms + 1);
+                    break;
+                case 3: // ظهور النسر: قطة، جوائز، يلاحقها نسر
+                    addPrizes(basePrizes + 2);
+                    addEnemies(baseEnemies + 1, 'eagle'); // نسر يطارد
+                    addPlatforms(basePlatforms + 2);
+                    break;
+                case 4: // عوائق متحركة: نسر وأكثر من جائزة وكوبون
+                    addPrizes(basePrizes + 3);
+                    addCoupons(1);
+                    addEnemies(baseEnemies + 1, 'moving'); // نسر يتحرك
+                    addPlatforms(basePlatforms + 3);
+                    break;
+                case 5: // الجاذبية المتغيرة
+                    addPrizes(basePrizes + 4);
+                    addCoupons(2);
+                    player.gravity = 0.8; // جاذبية أقوى
+                    addEnemies(baseEnemies + 2, 'moving');
+                    addPlatforms(basePlatforms + 4);
+                    break;
+                case 6: // المتاهة الخفيفة
+                    addPrizes(basePrizes + 5);
+                    addCoupons(3);
+                    addEnemies(baseEnemies + 2, 'eagle');
+                    // منصات معقدة أكثر
+                    addPlatforms(basePlatforms + 5); 
+                    break;
+                case 7: // أعداء متعددون
+                    addPrizes(basePrizes + 6);
+                    addCoupons(4);
+                    addEnemies(baseEnemies + 3, 'moving'); // أعداء أكثر
+                    addEnemies(1, 'eagle'); // نسر إضافي
+                    addPlatforms(basePlatforms + 6);
+                    break;
+                case 8: // السرعة القصوى والتحدي
+                    addPrizes(basePrizes + 7);
+                    addCoupons(5);
+                    player.gravity = 1; // جاذبية قصوى
+                    player.jumpPower = -15; // قفزة أعلى لتعويض الجاذبية
+                    addEnemies(baseEnemies + 4, 'moving');
+                    addEnemies(2, 'eagle');
+                    addPlatforms(basePlatforms + 7);
+                    break;
+                case 9: // مرحلة الزعيم النهائي (النسر الأكبر)
+                    addPrizes(basePrizes + 8);
+                    addCoupons(6);
+                    addEnemies(1, 'bossEagle'); // نسر زعيم أكبر وأسرع
+                    addPlatforms(basePlatforms + 8);
+                    break;
+            }
+            prizesRemainingDisplay.innerText = prizes.length;
         }
 
-        function draw() {
-            // رسم الخلفية
-            ctx.fillStyle = stageColors[currentStage - 1];
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // رسم الهدف (المربع الأحمر)
-            ctx.fillStyle = "#ff4757";
-            ctx.fillRect(goal.x, goal.y, goal.size, goal.size);
-            ctx.strokeStyle = "white";
-            ctx.strokeRect(goal.x, goal.y, goal.size, goal.size);
-
-            // رسم اللاعب
-            ctx.fillStyle = player.color;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "white";
-            ctx.fillRect(player.x, player.y, player.size, player.size);
-            ctx.shadowBlur = 0;
-
-            // نص المرحلة
-            ctx.fillStyle = "white";
-            ctx.font = "20px Arial";
-            ctx.fillText("المرحلة " + currentStage, player.x - 10, player.y - 10);
-
-            requestAnimationFrame(() => {
-                update();
-                draw();
-            });
-        }
-
-        draw();
-    </script>
-</body>
-</html>
+        function addPrizes(count) {
+            for (let i = 0; i < count; i++) {
