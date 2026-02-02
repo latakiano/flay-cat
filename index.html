@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eagle Level - Lightweight</title>
+    <title>Himalayan Legend - Stage 3</title>
     <style>
-        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; }
+        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         canvas { display: block; }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; color: white; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .distance-bar { width: 60%; height: 10px; background: rgba(255,255,255,0.2); margin: 10px auto; border-radius: 5px; overflow: hidden; }
+        #fill { width: 0%; height: 100%; background: #ffffff; box-shadow: 0 0 10px #ffffff; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h2 style="margin:0;">🦅 جبال النسور</h2>
-    <p>اضغط للقفز - (نسخة خفيفة ضد التعليق)</p>
+    <div style="font-size: 24px; font-weight: bold;">جبال النسور 🏔️</div>
+    <div class="distance-bar"><div id="fill"></div></div>
+    <div style="font-size: 16px;">المسافة المتبقية: <span id="dist">1000</span>m</div>
 </div>
 
 <canvas id="G"></canvas>
@@ -26,68 +29,80 @@
     function res() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
     window.addEventListener('resize', res); res();
 
-    // تحميل الصور بطريقة ذكية لا تسبب تعليق
-    const imgCat = new Image(); imgCat.src = 'https://img.icons8.com/color/96/cat--v1.png';
-    const imgEagle = new Image(); imgEagle.src = 'https://img.icons8.com/color/150/eagle.png';
+    // تحميل الصور باحترافية
+    const assets = {
+        cat: 'https://img.icons8.com/color/96/cat--v1.png',
+        eagle: 'https://img.icons8.com/color/150/eagle.png',
+        fish: 'https://img.icons8.com/color/48/fish.png'
+    };
+    const imgs = {};
+    for(let k in assets) { imgs[k] = new Image(); imgs[k].src = assets[k]; }
 
     let py = cvs.height / 2, pv = 0; 
-    let ex = -100, ey = cvs.height / 2; 
-    let pipes = [];
-    let frameCount = 0;
+    let ex = -120, ey = cvs.height / 2; 
+    let obstacles = [];
+    let distance = 1000;
+    let score = 0;
 
     function draw() {
-        // تحسين الأداء: تقليل العمليات الحسابية
-        c.fillStyle = '#001a33';
+        // رسم الخلفية (تدرج لوني يمثل جبال النسور)
+        let grad = c.createLinearGradient(0, 0, 0, cvs.height);
+        grad.addColorStop(0, '#001a33');
+        grad.addColorStop(1, '#003366');
+        c.fillStyle = grad;
         c.fillRect(0, 0, cvs.width, cvs.height);
 
-        pv += 0.5;
+        // منطق الحركة
+        pv += 0.48; 
         py += pv;
+        distance -= 0.5;
 
-        // حركة النسر
-        ey += (py - ey) * 0.05;
-        ex = Math.min(50, ex + 0.5);
+        // حركة النسر الذكية
+        ey += (py - 60 - ey) * 0.08;
+        ex = Math.min(60, ex + 0.4);
 
-        // العوائق (تظهر كل 100 إطار لتخفيف الضغط)
-        if (pipes.length === 0 || pipes[pipes.length - 1].x < cvs.width - 320) {
-            pipes.push({ x: cvs.width, h: Math.random() * (cvs.height - 300) + 50 });
+        // توليد العقبات (أعمدة بيضاء ثلجية)
+        if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < cvs.width - 340) {
+            obstacles.push({ x: cvs.width, h: Math.random() * (cvs.height - 320) + 60, w: 55 });
         }
 
-        c.fillStyle = "white";
-        for (let i = pipes.length - 1; i >= 0; i--) {
-            let p = pipes[i];
-            p.x -= 5; // سرعة معتدلة
+        // رسم العقبات والتصادم
+        c.fillStyle = "rgba(255, 255, 255, 0.9)";
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
+            o.x -= 7;
             
-            c.fillRect(p.x, 0, 50, p.h);
-            c.fillRect(p.x, p.h + 260, 50, cvs.height);
+            c.fillRect(o.x, 0, o.w, o.h); // العمود العلوي
+            c.fillRect(o.x, o.h + 260, o.w, cvs.height); // العمود السفلي
 
-            // تصادم مبسط جداً
-            if (90 > p.x && 50 < p.x + 50 && (py < p.h || py + 35 > p.h + 260)) {
-                resetGame();
-            }
-            if (p.x < -60) pipes.splice(i, 1);
+            // تصادم دقيق
+            if (100 > o.x && 55 < o.x + o.w && (py < o.h || py + 40 > o.h + 260)) reset();
+            if (o.x < -100) obstacles.splice(i, 1);
         }
 
-        // رسم النسر (إذا لم تحمل الصورة يرسم مربع أحمر)
-        if (imgEagle.complete) c.drawImage(imgEagle, ex, ey, 100, 100);
-        else { c.fillStyle = "red"; c.fillRect(ex, ey, 60, 60); }
+        // رسم النسر والقطة
+        c.drawImage(imgs.eagle, ex, ey, 110, 110);
+        c.drawImage(imgs.cat, 55, py, 50, 50);
 
-        // رسم القطة (إذا لم تحمل الصورة يرسم مربع برتقالي)
-        if (imgCat.complete) c.drawImage(imgCat, 50, py, 45, 45);
-        else { c.fillStyle = "orange"; c.fillRect(50, py, 40, 40); }
+        // تحديث الواجهة
+        document.getElementById('dist').innerText = Math.max(0, Math.floor(distance));
+        document.getElementById('fill').style.width = (1 - (distance/1000))*100 + "%";
 
-        if (py > cvs.height || py < 0 || 50 < ex + 30) resetGame();
+        // شروط الخسارة
+        if (py > cvs.height || py < 0 || 55 < ex + 40) reset();
 
         requestAnimationFrame(draw);
     }
 
-    function resetGame() {
-        py = cvs.height / 2; pv = 0;
-        ex = -100; ey = cvs.height / 2;
-        pipes = [];
+    function reset() {
+        py = cvs.height / 2; pv = 0; ex = -120; ey = cvs.height / 2;
+        obstacles = []; distance = 1000;
     }
 
-    window.onmousedown = () => { pv = -8; };
-    window.ontouchstart = (e) => { e.preventDefault(); pv = -8; };
+    // القفز (دعم كامل للمس والماوس)
+    const jump = (e) => { pv = -8.5; if(e.cancelable) e.preventDefault(); };
+    window.addEventListener('mousedown', jump);
+    window.addEventListener('touchstart', jump, { passive: false });
 
     draw();
 </script>
