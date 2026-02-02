@@ -3,108 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Himalayan Legend - Stage 3</title>
+    <title>Stage 3: Eagle Mountain</title>
     <style>
-        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: sans-serif; }
         canvas { display: block; }
-        #ui { position: absolute; top: 20px; width: 100%; text-align: center; color: white; pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .distance-bar { width: 60%; height: 10px; background: rgba(255,255,255,0.2); margin: 10px auto; border-radius: 5px; overflow: hidden; }
-        #fill { width: 0%; height: 100%; background: #ffffff; box-shadow: 0 0 10px #ffffff; }
+        #ui { 
+            position: absolute; top: 15px; width: 100%; text-align: center; 
+            color: white; pointer-events: none; text-shadow: 1px 1px 5px #000;
+        }
+        .progress-container { width: 50%; height: 8px; background: rgba(255,255,255,0.1); margin: 8px auto; border-radius: 4px; }
+        #fill { width: 0%; height: 100%; background: #00d4ff; border-radius: 4px; transition: width 0.3s; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div style="font-size: 24px; font-weight: bold;">جبال النسور 🏔️</div>
-    <div class="distance-bar"><div id="fill"></div></div>
-    <div style="font-size: 16px;">المسافة المتبقية: <span id="dist">1000</span>m</div>
+    <div style="font-size: 20px; font-weight: bold;">🏔️ جبال النسور</div>
+    <div class="progress-container"><div id="fill"></div></div>
+    <div style="font-size: 14px;">بقي: <span id="dist">1000</span>m</div>
 </div>
 
-<canvas id="G"></canvas>
+<canvas id="stageCanvas"></canvas>
 
 <script>
-    const cvs = document.getElementById('G');
-    const c = cvs.getContext('2d');
+    const canvas = document.getElementById('stageCanvas');
+    const ctx = canvas.getContext('2d');
 
-    function res() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
-    window.addEventListener('resize', res); res();
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
 
-    // تحميل الصور باحترافية
-    const assets = {
-        cat: 'https://img.icons8.com/color/96/cat--v1.png',
-        eagle: 'https://img.icons8.com/color/150/eagle.png',
-        fish: 'https://img.icons8.com/color/48/fish.png'
-    };
-    const imgs = {};
-    for(let k in assets) { imgs[k] = new Image(); imgs[k].src = assets[k]; }
+    // إعداد الصور
+    const imgCat = new Image(); imgCat.src = 'https://img.icons8.com/color/96/cat--v1.png';
+    const imgEagle = new Image(); imgEagle.src = 'https://img.icons8.com/color/150/eagle.png';
 
-    let py = cvs.height / 2, pv = 0; 
-    let ex = -120, ey = cvs.height / 2; 
+    // المتغيرات الأساسية
+    let py = canvas.height / 2, pv = 0; 
+    let ex = -150, ey = canvas.height / 2; 
     let obstacles = [];
     let distance = 1000;
-    let score = 0;
+    let gameReady = false;
 
-    function draw() {
-        // رسم الخلفية (تدرج لوني يمثل جبال النسور)
-        let grad = c.createLinearGradient(0, 0, 0, cvs.height);
-        grad.addColorStop(0, '#001a33');
-        grad.addColorStop(1, '#003366');
-        c.fillStyle = grad;
-        c.fillRect(0, 0, cvs.width, cvs.height);
+    // التأكد من تحميل الصور قبل البدء الفعلي
+    let loaded = 0;
+    [imgCat, imgEagle].forEach(img => {
+        img.onload = () => { loaded++; if(loaded === 2) gameReady = true; };
+    });
 
-        // منطق الحركة
-        pv += 0.48; 
+    function update() {
+        if (!gameReady) {
+            requestAnimationFrame(update);
+            return;
+        }
+
+        // مسح ورسم الخلفية
+        ctx.fillStyle = '#001a33';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // حركة القطة
+        pv += 0.45;
         py += pv;
-        distance -= 0.5;
 
-        // حركة النسر الذكية
-        ey += (py - 60 - ey) * 0.08;
-        ex = Math.min(60, ex + 0.4);
+        // مطاردة النسر
+        ey += (py - 50 - ey) * 0.07;
+        ex = Math.min(70, ex + 0.3);
 
-        // توليد العقبات (أعمدة بيضاء ثلجية)
-        if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < cvs.width - 340) {
-            obstacles.push({ x: cvs.width, h: Math.random() * (cvs.height - 320) + 60, w: 55 });
-        }
-
-        // رسم العقبات والتصادم
-        c.fillStyle = "rgba(255, 255, 255, 0.9)";
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-            let o = obstacles[i];
-            o.x -= 7;
-            
-            c.fillRect(o.x, 0, o.w, o.h); // العمود العلوي
-            c.fillRect(o.x, o.h + 260, o.w, cvs.height); // العمود السفلي
-
-            // تصادم دقيق
-            if (100 > o.x && 55 < o.x + o.w && (py < o.h || py + 40 > o.h + 260)) reset();
-            if (o.x < -100) obstacles.splice(i, 1);
-        }
-
-        // رسم النسر والقطة
-        c.drawImage(imgs.eagle, ex, ey, 110, 110);
-        c.drawImage(imgs.cat, 55, py, 50, 50);
-
-        // تحديث الواجهة
+        // إدارة المسافة والتقدم
+        distance -= 0.6;
         document.getElementById('dist').innerText = Math.max(0, Math.floor(distance));
         document.getElementById('fill').style.width = (1 - (distance/1000))*100 + "%";
 
-        // شروط الخسارة
-        if (py > cvs.height || py < 0 || 55 < ex + 40) reset();
+        // توليد العقبات
+        if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 320) {
+            obstacles.push({ x: canvas.width, h: Math.random() * (canvas.height - 300) + 50 });
+        }
 
-        requestAnimationFrame(draw);
+        // رسم العقبات والتصادم
+        ctx.fillStyle = "white";
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
+            o.x -= 6.5; // سرعة الحركة
+            
+            ctx.fillRect(o.x, 0, 55, o.h);
+            ctx.fillRect(o.x, o.h + 250, 55, canvas.height);
+
+            // التصادم
+            if (110 > o.x && 60 < o.x + 55 && (py < o.h || py + 40 > o.h + 250)) reset();
+            if (o.x < -100) obstacles.splice(i, 1);
+        }
+
+        // رسم الشخصيات
+        ctx.drawImage(imgEagle, ex, ey, 100, 100);
+        ctx.drawImage(imgCat, 65, py, 45, 45);
+
+        // السقوط أو لمس النسر
+        if (py > canvas.height || py < 0 || 65 < ex + 35) reset();
+
+        if (distance <= 0) {
+            // هنا سينتهي الكود تمهيداً للمرحلة الرابعة
+            alert("مبروك! هزمت النسر");
+            distance = 1000; reset();
+        }
+
+        requestAnimationFrame(update);
     }
 
     function reset() {
-        py = cvs.height / 2; pv = 0; ex = -120; ey = cvs.height / 2;
+        py = canvas.height / 2; pv = 0;
+        ex = -150; ey = canvas.height / 2;
         obstacles = []; distance = 1000;
     }
 
-    // القفز (دعم كامل للمس والماوس)
-    const jump = (e) => { pv = -8.5; if(e.cancelable) e.preventDefault(); };
-    window.addEventListener('mousedown', jump);
-    window.addEventListener('touchstart', jump, { passive: false });
+    // التحكم
+    window.addEventListener('mousedown', () => pv = -8.5);
+    window.addEventListener('touchstart', (e) => { e.preventDefault(); pv = -8.5; }, {passive: false});
 
-    draw();
+    update();
 </script>
 </body>
 </html>
