@@ -3,34 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Himalayan Cat - Fixed Stage 3</title>
+    <title>Himalayan Cat - 9 Stages Fixed</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
-        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; z-index: 10; }
-        .bar { width: 70%; height: 12px; background: #333; margin: 8px auto; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
+        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; z-index: 10; pointer-events: none; }
+        .bar { width: 70%; height: 12px; background: #333; margin: 8px auto; border-radius: 6px; overflow: hidden; }
         #fill { width: 0%; height: 100%; background: #00ff00; }
         #overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; 
+            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
             justify-content: center; align-items: center; color: white; z-index: 1000; 
         }
-        button { 
-            padding: 20px 50px; font-size: 24px; cursor: pointer; border-radius: 15px; 
-            border: none; background: #27ae60; color: white; font-weight: bold;
-        }
+        button { padding: 15px 40px; font-size: 22px; cursor: pointer; border-radius: 12px; background: #27ae60; color: white; border: none; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div id="lvlName" style="font-size: 22px; font-weight: bold;">المرحلة 1</div>
+    <div id="lvlName" style="font-size: 20px; font-weight: bold;">المرحلة 1</div>
     <div class="bar"><div id="fill"></div></div>
-    <div class="info" style="color:#f1c40f">المسافة: <span id="dist">1000</span>m | النقاط: <span id="score">0</span></div>
+    <div style="color:#f1c40f; font-size: 14px;">المسافة: <span id="dist">1000</span>m</div>
 </div>
 
 <div id="overlay">
-    <h1 id="msg">مغامرة الـ 9 مراحل</h1>
-    <button id="btn" onclick="setupStage()">ابدأ الآن 🐾</button>
+    <h1 id="msg">مغامرة القطة الملونة</h1>
+    <button id="btn" onclick="setupStage()">ابدأ المرحلة 🐾</button>
 </div>
 
 <canvas id="c"></canvas>
@@ -45,15 +42,15 @@
     window.addEventListener('resize', resize); resize();
 
     const stages = [
-        { n: "الذئب يريد اكلك", m: "wolf", bg: "#0a0a0a", col: "#FFFF00", speed: 5 },
-        { n: "اهرب من الشبح لاتجعله يمسك بك", m: "ghost", bg: "#1a0033", col: "#00FF00", speed: 7 },
-        { n: "النسر سوف يلتهمك", m: "eagle", bg: "#001a33", col: "#FFFFFF", speed: 8 }, // تحسين السرعة
-        { n: "الافعى تريد عصرك", m: "snake", bg: "#0d1a0d", col: "#FF8C00", speed: 10 },
-        { n: "التمساح سوف يقطعك اربا", m: "croc", bg: "#002b2b", col: "#40E0D0", speed: 12 },
-        { n: "احذر الاسد إنه جائع", m: "lion", bg: "#2c1e00", col: "#FF4500", speed: 13 },
-        { n: "التنين المرعب سوف يقضي عليك", m: "dragon", bg: "#1a0500", col: "#FF0000", speed: 15 },
-        { n: "تزلج الآن", m: "bear", bg: "#e6fbff", col: "#33ccff", speed: 16 },
-        { n: "ياإلهي ماهذا الظلام", m: "alien", bg: "#00001a", col: "#cc00ff", speed: 18 }
+        { n: "غابة الذئاب", m: "wolf", bg: "#0a0a0a", col: "#FFFF00", s: 5 },
+        { n: "مقبرة الأشباح", m: "ghost", bg: "#1a0033", col: "#00FF00", s: 7 },
+        { n: "جبال النسور", m: "eagle", bg: "#001a33", col: "#FFFFFF", s: 8 },
+        { n: "وادي الأفاعي", m: "snake", bg: "#0d1a0d", col: "#FF8C00", s: 10 },
+        { n: "نهر التماسيح", m: "croc", bg: "#002b2b", col: "#40E0D0", s: 11 },
+        { n: "عرين الأسد", m: "lion", bg: "#2c1e00", col: "#FF4500", s: 12 },
+        { n: "كهف التنين", m: "dragon", bg: "#1a0500", col: "#FF0000", s: 14 },
+        { n: "مملكة الجليد", m: "bear", bg: "#e6fbff", col: "#33ccff", s: 16 },
+        { n: "الفضاء المظلم", m: "alien", bg: "#00001a", col: "#cc00ff", s: 18 }
     ];
 
     const I = {
@@ -70,23 +67,24 @@
         fish: 'https://img.icons8.com/color/48/fish.png',
         cabin: 'https://img.icons8.com/color/200/log-cabin.png'
     };
+
     const imgs = {};
-    for(let k in I) { imgs[k] = new Image(); imgs[k].src = I[k]; }
+    Object.keys(I).forEach(k => { imgs[k] = new Image(); imgs[k].src = I[k]; });
 
     let cur = 0, score = 0, dist = 1000, active = false, started = false;
-    let p = { x: 100, y: 0, v: 0 }, m = { x: -150, y: 200 }, obs = [], items = [], cabinX = -500;
+    let p = { x: 80, y: 300, v: 0 }, m = { x: -150, y: 300 }, obs = [], items = [], cabinX = -500;
 
     window.setupStage = function() {
         overlay.style.display = 'none';
-        const s = stages[cur];
-        document.getElementById('lvlName').innerText = `المرحلة ${cur+1}: ${s.n}`;
-        dist = 1000; p.y = canvas.height / 2; p.v = 0; m.x = -150; m.y = canvas.height/2;
-        obs = []; items = []; cabinX = -500; active = true; started = false;
+        dist = 1000; p.y = canvas.height/2; p.v = 0; m.x = -150; 
+        obs = []; items = []; cabinX = -500;
+        document.getElementById('lvlName').innerText = `المرحلة ${cur+1}: ${stages[cur].n}`;
+        active = true; started = false;
     };
 
     function die() {
         active = false;
-        msg.innerText = "يامسكين امسك بك سوف يجعلك من الماضي " + stages[cur].n;
+        msg.innerText = "أوه! حاول مجدداً في " + stages[cur].n;
         overlay.style.display = 'flex';
     }
 
@@ -95,61 +93,57 @@
         ctx.fillStyle = s.bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         if (active && started) {
-            p.v += 0.45; p.y += p.v; dist -= s.speed / 10;
-
-            // تحسين ذكاء الوحش للمرحلة 3 تحديداً
-            let targetY = p.y - 40;
-            m.y += (targetY - m.y) * 0.05;
-            m.x = Math.min(p.x - 120, m.x + 0.2);
+            p.v += 0.4; p.y += p.v; dist -= s.s / 10;
+            m.y += (p.y - m.y) * 0.05; m.x = Math.min(p.x - 110, m.x + 0.2);
 
             if (dist <= 0) {
                 if(cabinX === -500) cabinX = canvas.width;
-                cabinX -= s.speed;
-                if(p.x > cabinX + 80) {
+                cabinX -= s.s;
+                if(p.x > cabinX + 60) {
                     active = false; cur++;
-                    if(cur < stages.length) { msg.innerText = "أحسنتِ! إلى المرحلة التالية 🏡"; }
-                    else { msg.innerText = "🏆 تهانينا! ختمتِ اللعبة!"; cur = 0; }
+                    if(cur >= stages.length) { msg.innerText = "🏆 مبروك الختم!"; cur = 0; }
+                    else { msg.innerText = "🏡 أحسنتِ! الكوخ آمن"; }
                     overlay.style.display = 'flex';
                 }
             }
 
-            if (dist > 50 && (obs.length === 0 || obs[obs.length-1].x < canvas.width - 400)) {
-                let h = Math.random() * (canvas.height - 350) + 100;
-                obs.push({ x: canvas.width, t: h, g: 280, col: s.col }); // فتحة أكبر
-                if(Math.random() > 0.5) items.push({ x: canvas.width + 50, y: h + 140 });
+            if (dist > 50 && (obs.length === 0 || obs[obs.length-1].x < canvas.width - 350)) {
+                let gapY = Math.random() * (canvas.height - 350) + 100;
+                obs.push({ x: canvas.width, y: gapY, g: 280 });
+                if(Math.random() > 0.5) items.push({ x: canvas.width + 50, y: gapY + 140 });
             }
 
             obs.forEach((o, i) => {
-                o.x -= s.speed;
-                if(p.x+30 > o.x && p.x+10 < o.x+50 && (p.y+10 < o.t || p.y+35 > o.t+o.g)) die();
-                if(o.x < -100) obs.splice(i, 1);
+                o.x -= s.s;
+                if(p.x+35 > o.x && p.x+5 < o.x+50 && (p.y+10 < o.y || p.y+35 > o.y+o.g)) die();
+                if(o.x < -60) obs.splice(i, 1);
             });
 
             items.forEach((f, i) => {
-                f.x -= s.speed;
-                if(Math.hypot(p.x-f.x, p.y-f.y) < 50) { score += 100; items.splice(i, 1); }
+                f.x -= s.s;
+                if(Math.hypot(p.x-f.x, p.y-f.y) < 45) items.splice(i, 1);
             });
 
-            if(p.y > canvas.height || p.y < -50 || p.x < m.x + 50) die();
-
+            if(p.y > canvas.height || p.y < -50 || p.x < m.x + 40) die();
             document.getElementById('fill').style.width = (1 - (dist/1000))*100 + "%";
             document.getElementById('dist').innerText = Math.max(0, Math.floor(dist));
-            document.getElementById('score').innerText = score;
         }
 
-        if(cabinX > -500) ctx.drawImage(imgs.cabin, cabinX, canvas.height/2-100, 150, 150);
+        if(cabinX > -500) ctx.drawImage(imgs.cabin, cabinX, canvas.height/2-80, 150, 150);
         ctx.drawImage(imgs[s.m], m.x, m.y, 100, 100);
-        obs.forEach(o => { ctx.fillStyle = o.col; ctx.fillRect(o.x, 0, 50, o.t); ctx.fillRect(o.x, o.t+o.g, 50, canvas.height); });
+        obs.forEach(o => { 
+            ctx.fillStyle = s.col; ctx.fillRect(o.x, 0, 50, o.y); 
+            ctx.fillRect(o.x, o.y+o.g, 50, canvas.height); 
+        });
         items.forEach(f => ctx.drawImage(imgs.fish, f.x, f.y, 40, 40));
         ctx.drawImage(imgs.cat, p.x, p.y, 50, 50);
 
         requestAnimationFrame(loop);
     }
 
-    const jump = (e) => { if(active) { started = true; p.v = -8; } };
-    canvas.addEventListener('mousedown', jump);
-    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); }, {passive: false});
-
+    const start = () => { if(active) started = true; p.v = -7.5; };
+    window.addEventListener('mousedown', start);
+    window.addEventListener('touchstart', (e) => { if(active) { e.preventDefault(); start(); } }, {passive: false});
     loop();
 </script>
 </body>
