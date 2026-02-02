@@ -1,22 +1,55 @@
-def test_game_stages():
-    stages = {
-        1: "المرحلة 1: التدريب الأساسي",
-        2: "المرحلة 2: زيادة السرعة",
-        3: "المرحلة 3: العوائق الثابتة (جديد)",
-        4: "المرحلة 4: العوائق المتحركة (جديد)",
-        5: "المرحلة 5: تحدي الوقت (جديد)",
-        6: "المرحلة 6: الجاذبية المتغيرة (جديد)",
-        7: "المرحلة 7: المتاهة المعقدة (جديد)",
-        8: "المرحلة 8: هجوم الأعداء (جديد)",
-        9: "المرحلة 9: مواجهة الزعيم (نهاية المجموعة)"
-    }
-    
-    print("--- بدء اختبار نظام المراحل التسعة ---")
-    for level in range(1, 10):
-        input(f"اضغط Enter لتشغيل {stages[level]}...")
-        print(f"تم تحميل {stages[level]} بنجاح ✅")
-    
-    print("\nتم الانتهاء من جميع المراحل السبعة الجديدة بنجاح!")
+import pygame
+import sys
+
+# إعدادات الشاشة
+WIDTH, HEIGHT = 800, 600
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("مشروع الـ 9 مراحل - النسخة المعتمدة")
+clock = pygame.time.Clock()
+font = pygame.font.SysFont("Arial", 50)
+small_font = pygame.font.SysFont("Arial", 30)
+
+# ألوان المراحل التسعة (كل مرحلة لها لون يميزها)
+STAGE_COLORS = [
+    (200, 0, 0), (0, 200, 0), (0, 0, 200), 
+    (200, 200, 0), (200, 0, 200), (0, 200, 200),
+    (100, 100, 100), (255, 165, 0), (50, 50, 50)
+]
+
+class Game:
+    def __init__(self):
+        self.current_stage = 1
+        self.total_stages = 9
+
+    def run(self):
+        while True:
+            # 1. التعامل مع الأحداث
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:  # اضغط مسافة للانتقال للمرحلة التالية
+                        if self.current_stage < self.total_stages:
+                            self.current_stage += 1
+                        else:
+                            self.current_stage = 1 # العودة للمرحلة الأولى بعد النهاية
+
+            # 2. الرسم والتحديث
+            color = STAGE_COLORS[self.current_stage - 1]
+            screen.fill(color) # تغيير لون الخلفية حسب المرحلة
+            
+            # نصوص العرض
+            title = font.render(f"STAGE {self.current_stage}", True, (255, 255, 255))
+            hint = small_font.render("Press SPACE to Next Stage", True, (255, 255, 255))
+            
+            screen.blit(title, (WIDTH//2 - 100, HEIGHT//2 - 50))
+            screen.blit(hint, (WIDTH//2 - 150, HEIGHT//2 + 50))
+
+            pygame.display.flip()
+            clock.tick(60)
 
 if __name__ == "__main__":
-    test_game_stages()
+    game = Game()
+    game.run()
