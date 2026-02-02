@@ -1,127 +1,35 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stage 3: Eagle Mountain</title>
-    <style>
-        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        canvas { display: block; }
-        #ui { 
-            position: absolute; top: 15px; width: 100%; text-align: center; 
-            color: white; pointer-events: none; text-shadow: 1px 1px 5px #000;
+# ملاحظة: هذا الهيكل يدعم 9 مراحل (2 السابقة + 7 الجديدة)
+class GameEngine:
+    def __init__(self):
+        self.current_stage = 1
+        self.total_stages = 9  # تم التحديث إلى 9 مراحل
+        self.score = 0
+
+    def load_stage(self, stage_num):
+        print(f"--- تحميل المرحلة رقم {stage_num} ---")
+        # هنا يتم وضع تفاصيل كل مرحلة
+        stages_data = {
+            1: "مرحلة البداية: تدريب بسيط",
+            2: "المرحلة الثانية: زيادة السرعة",
+            3: "المرحلة الثالثة: ظهور العوائق الثابتة",
+            4: "المرحلة الرابعة: العوائق المتحركة",
+            5: "المرحلة الخامسة: تحدي الوقت (سرعة مضاعفة)",
+            6: "المرحلة السادسة: الجاذبية المتغيرة",
+            7: "المرحلة السابعة: المتاهة المعقدة",
+            8: "المرحلة الثامنة: هجوم الأعداء",
+            9: "مرحلة الزعيم: التحدي النهائي لهذه المجموعة"
         }
-        .progress-container { width: 50%; height: 8px; background: rgba(255,255,255,0.1); margin: 8px auto; border-radius: 4px; }
-        #fill { width: 0%; height: 100%; background: #00d4ff; border-radius: 4px; transition: width 0.3s; }
-    </style>
-</head>
-<body>
+        return stages_data.get(stage_num, "مرحلة غير معروفة")
 
-<div id="ui">
-    <div style="font-size: 20px; font-weight: bold;">🏔️ جبال النسور</div>
-    <div class="progress-container"><div id="fill"></div></div>
-    <div style="font-size: 14px;">بقي: <span id="dist">1000</span>m</div>
-</div>
+    def next_stage(self):
+        if self.current_stage < self.total_stages:
+            self.current_stage += 1
+            print(f"مبروك! انتقلت إلى المرحلة {self.current_stage}")
+        else:
+            print("تهانينا! أتممت جميع المراحل السبعة الجديدة بنجاح!")
 
-<canvas id="stageCanvas"></canvas>
-
-<script>
-    const canvas = document.getElementById('stageCanvas');
-    const ctx = canvas.getContext('2d');
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // إعداد الصور
-    const imgCat = new Image(); imgCat.src = 'https://img.icons8.com/color/96/cat--v1.png';
-    const imgEagle = new Image(); imgEagle.src = 'https://img.icons8.com/color/150/eagle.png';
-
-    // المتغيرات الأساسية
-    let py = canvas.height / 2, pv = 0; 
-    let ex = -150, ey = canvas.height / 2; 
-    let obstacles = [];
-    let distance = 1000;
-    let gameReady = false;
-
-    // التأكد من تحميل الصور قبل البدء الفعلي
-    let loaded = 0;
-    [imgCat, imgEagle].forEach(img => {
-        img.onload = () => { loaded++; if(loaded === 2) gameReady = true; };
-    });
-
-    function update() {
-        if (!gameReady) {
-            requestAnimationFrame(update);
-            return;
-        }
-
-        // مسح ورسم الخلفية
-        ctx.fillStyle = '#001a33';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // حركة القطة
-        pv += 0.45;
-        py += pv;
-
-        // مطاردة النسر
-        ey += (py - 50 - ey) * 0.07;
-        ex = Math.min(70, ex + 0.3);
-
-        // إدارة المسافة والتقدم
-        distance -= 0.6;
-        document.getElementById('dist').innerText = Math.max(0, Math.floor(distance));
-        document.getElementById('fill').style.width = (1 - (distance/1000))*100 + "%";
-
-        // توليد العقبات
-        if (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 320) {
-            obstacles.push({ x: canvas.width, h: Math.random() * (canvas.height - 300) + 50 });
-        }
-
-        // رسم العقبات والتصادم
-        ctx.fillStyle = "white";
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-            let o = obstacles[i];
-            o.x -= 6.5; // سرعة الحركة
-            
-            ctx.fillRect(o.x, 0, 55, o.h);
-            ctx.fillRect(o.x, o.h + 250, 55, canvas.height);
-
-            // التصادم
-            if (110 > o.x && 60 < o.x + 55 && (py < o.h || py + 40 > o.h + 250)) reset();
-            if (o.x < -100) obstacles.splice(i, 1);
-        }
-
-        // رسم الشخصيات
-        ctx.drawImage(imgEagle, ex, ey, 100, 100);
-        ctx.drawImage(imgCat, 65, py, 45, 45);
-
-        // السقوط أو لمس النسر
-        if (py > canvas.height || py < 0 || 65 < ex + 35) reset();
-
-        if (distance <= 0) {
-            // هنا سينتهي الكود تمهيداً للمرحلة الرابعة
-            alert("مبروك! هزمت النسر");
-            distance = 1000; reset();
-        }
-
-        requestAnimationFrame(update);
-    }
-
-    function reset() {
-        py = canvas.height / 2; pv = 0;
-        ex = -150; ey = canvas.height / 2;
-        obstacles = []; distance = 1000;
-    }
-
-    // التحكم
-    window.addEventListener('mousedown', () => pv = -8.5);
-    window.addEventListener('touchstart', (e) => { e.preventDefault(); pv = -8.5; }, {passive: false});
-
-    update();
-</script>
-</body>
-</html>
+# تشغيل التجربة
+game = GameEngine()
+for i in range(9):
+    print(game.load_stage(game.current_stage))
+    game.next_stage()
