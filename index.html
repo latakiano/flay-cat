@@ -3,109 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eagle Level - Logic Test</title>
+    <title>Emergency Start - No Buttons</title>
     <style>
-        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; font-family: sans-serif; }
-        canvas { display: block; background: #001a33; }
-        #overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; color: white; z-index: 100; 
-        }
-        button { 
-            padding: 25px 60px; font-size: 30px; cursor: pointer; border-radius: 20px; 
-            border: none; background: #27ae60; color: white; font-weight: bold;
+        body { margin: 0; background: #001a33; overflow: hidden; touch-action: none; }
+        canvas { display: block; }
+        #msg { 
+            position: absolute; top: 10px; width: 100%; text-align: center; 
+            color: white; font-family: sans-serif; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-<div id="overlay">
-    <h1 id="status">اختبار المحرك ⚙️</h1>
-    <button id="startBtn">ابدأ الاختبار الآن</button>
-</div>
-
-<canvas id="gameCanvas"></canvas>
+<div id="msg"><h1>المرحلة 3: النسر (بدء تلقائي)</h1><p>اضغط في أي مكان للقفز</p></div>
+<canvas id="G"></canvas>
 
 <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const overlay = document.getElementById('overlay');
-    const startBtn = document.getElementById('startBtn');
+    const cvs = document.getElementById('G');
+    const c = cvs.getContext('2d');
 
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    window.addEventListener('resize', resize); resize();
+    function res() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+    window.addEventListener('resize', res); res();
 
-    let gameActive = false;
-    let p = { x: 80, y: 0, v: 0 }; // القطة (ستظهر كمربع برتقالي)
-    let e = { x: -100, y: 0 };     // النسر (سيظهر كمربع أحمر)
-    let obs = [];
+    // متغيرات بسيطة جداً لضمان العمل
+    let py = cvs.height / 2, pv = 0; // القطة
+    let ex = -100, ey = cvs.height / 2; // النسر
+    let pipes = [];
 
-    startBtn.onclick = function() {
-        overlay.style.display = 'none';
-        p.y = canvas.height / 2;
-        e.y = canvas.height / 2;
-        p.v = 0;
-        obs = [];
-        gameActive = true;
-    };
+    function draw() {
+        // خلفية زرقاء غامقة
+        c.fillStyle = '#001a33';
+        c.fillRect(0, 0, cvs.width, cvs.height);
 
-    function update() {
-        if (!gameActive) return;
+        // تحريك القطة (المربع البرتقالي)
+        pv += 0.5;
+        py += pv;
 
-        // 1. مسح الشاشة
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 2. الجاذبية
-        p.v += 0.5;
-        p.y += p.v;
+        // تحريك النسر (المربع الأحمر)
+        ey += (py - ey) * 0.05;
+        ex = Math.min(50, ex + 0.5);
 
-        // 3. النسر (يلاحق القطة)
-        e.y += (p.y - e.y) * 0.05;
-        e.x = Math.min(p.x - 80, e.x + 0.5);
-
-        // 4. الحواجز (بيضاء)
-        if (obs.length === 0 || obs[obs.length - 1].x < canvas.width - 350) {
-            obs.push({ x: canvas.width, t: Math.random() * (canvas.height - 300) + 50, g: 250 });
+        // إنتاج العوائق
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < cvs.width - 300) {
+            pipes.push({ x: cvs.width, h: Math.random() * (cvs.height - 300) + 50 });
         }
 
-        ctx.fillStyle = "white";
-        for (let i = obs.length - 1; i >= 0; i--) {
-            let o = obs[i];
-            o.x -= 7;
-            // رسم الحواجز
-            ctx.fillRect(o.x, 0, 60, o.t);
-            ctx.fillRect(o.x, o.t + o.g, 60, canvas.height);
+        // رسم العوائق
+        c.fillStyle = "white";
+        pipes.forEach((p, i) => {
+            p.x -= 6;
+            c.fillRect(p.x, 0, 50, p.h);
+            c.fillRect(p.x, p.h + 250, 50, cvs.height);
 
-            // تصادم مع الحواجز
-            if (p.x + 40 > o.x && p.x < o.x + 60 && (p.y < o.t || p.y + 40 > o.t + o.g)) {
-                gameActive = false; location.reload();
-            }
-            if (o.x < -100) obs.splice(i, 1);
-        }
+            // تصادم مع العوائق
+            if (100 > p.x && 50 < p.x + 50 && (py < p.h || py + 40 > p.h + 250)) location.reload();
+            if (p.x < -60) pipes.splice(i, 1);
+        });
 
-        // 5. الموت (نسر أو سقوط)
-        if (p.y > canvas.height || p.y < 0 || p.x < e.x + 40) {
-            gameActive = false; location.reload();
-        }
+        // رسم القطة والنسر
+        c.fillStyle = "#ff9800"; c.fillRect(50, py, 40, 40); // القطة
+        c.fillStyle = "#ff0000"; c.fillRect(ex, ey, 50, 50); // النسر
 
-        // 6. رسم "القطة" (مربع برتقالي)
-        ctx.fillStyle = "#ff9800";
-        ctx.fillRect(p.x, p.y, 40, 40);
+        // الخسارة
+        if (py > cvs.height || py < 0 || 50 < ex + 40) location.reload();
 
-        // 7. رسم "النسر" (مربع أحمر)
-        ctx.fillStyle = "#ff0000";
-        ctx.fillRect(e.x, e.y, 60, 60);
-
-        requestAnimationFrame(update);
+        requestAnimationFrame(draw);
     }
 
-    // القفز
-    function jump() { if (gameActive) p.v = -9; }
-    window.addEventListener('mousedown', jump);
-    window.addEventListener('touchstart', (ev) => { ev.preventDefault(); jump(); }, {passive: false});
+    // القفز عند اللمس
+    window.onmousedown = () => { pv = -9; };
+    window.ontouchstart = (e) => { e.preventDefault(); pv = -9; };
 
-    update(); // تشغيل حلقة الرسم
+    // انطلاق المحرك تلقائياً
+    draw();
 </script>
 </body>
 </html>
