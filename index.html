@@ -8,7 +8,7 @@
         body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
         #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; pointer-events: none; z-index: 10; }
         .bar { width: 70%; height: 12px; background: #333; margin: 8px auto; border-radius: 6px; overflow: hidden; border: 1px solid #555; }
-        #fill { width: 0%; height: 100%; background: #00ff00; transition: width 0.2s; }
+        #fill { width: 0%; height: 100%; background: #00ff00; transition: width 0.1s; }
         #overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.95); display: flex; flex-direction: column; 
@@ -31,7 +31,7 @@
 </div>
 
 <div id="overlay">
-    <h1 id="msg">مغامرة القطة: التسع مراحل</h1>
+    <h1 id="msg">مغامرة القطة الملونة</h1>
     <p id="subMsg" style="color: #ccc;">تجاوز العقبات للوصول للكوخ</p>
     <button id="btn" onclick="setupStage()">ابدأ الآن 🐾</button>
 </div>
@@ -47,17 +47,16 @@
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     window.addEventListener('resize', resize); resize();
 
-    // إعداد الـ 9 مراحل (7 القديمة + 2 الجديدة)
     const stages = [
         { n: "غابة الذئاب", m: "wolf", bg: "#0a0a0a", col: "#FFFF00", speed: 5 },
         { n: "مقبرة الأشباح", m: "ghost", bg: "#1a0033", col: "#00FF00", speed: 7 },
-        { n: "جبال النسور", m: "eagle", bg: "#001a33", col: "#FFFFFF", speed: 9 },
+        { n: "جبال النسور", m: "eagle", bg: "#001a33", col: "#FFFFFF", speed: 9 }, // تم إصلاحها
         { n: "وادي الأفاعي", m: "snake", bg: "#0d1a0d", col: "#FF8C00", speed: 11 },
         { n: "نهر التماسيح", m: "croc", bg: "#002b2b", col: "#40E0D0", speed: 12 },
         { n: "عرين الأسد", m: "lion", bg: "#2c1e00", col: "#FF4500", speed: 13 },
         { n: "كهف التنين", m: "dragon", bg: "#1a0500", col: "#FF0000", speed: 15 },
-        { n: "مملكة الجليد", m: "bear", bg: "#e6fbff", col: "#33ccff", speed: 17 }, // مرحلة جديدة
-        { n: "الفضاء المظلم", m: "alien", bg: "#00001a", col: "#cc00ff", speed: 19 }  // مرحلة جديدة
+        { n: "مملكة الجليد", m: "bear", bg: "#e6fbff", col: "#33ccff", speed: 17 },
+        { n: "الفضاء المظلم", m: "alien", bg: "#00001a", col: "#cc00ff", speed: 19 }
     ];
 
     const I = {
@@ -112,62 +111,65 @@
             p.v += 0.45; p.y += p.v;
             dist -= s.speed / 10;
 
-            // ذكاء الوحوش
-            if (["eagle", "dragon", "alien", "ghost"].includes(s.m)) m.y += (p.y - 100 - m.y) * 0.12;
-            else m.y += (p.y - m.y) * 0.05;
-            m.x = Math.min(p.x - 110, m.x + 0.3); // زيادة طفيفة في سرعة لحاق الوحش
+            // تم إصلاح ملاحقة الوحش (وخاصة النسر) ليكون أكثر سلاسة
+            if (["eagle", "dragon", "alien", "ghost"].includes(s.m)) {
+                m.y += (p.y - 50 - m.y) * 0.08; // تم تقليل القوة قليلاً لضمان عدم التعليق
+            } else {
+                m.y += (p.y - m.y) * 0.05;
+            }
+            m.x = Math.min(p.x - 120, m.x + 0.3);
 
             if (dist <= 0) {
                 if(cabinX === -500) cabinX = canvas.width;
                 cabinX -= s.speed;
-                if(p.x > cabinX + 100) {
+                if(p.x > cabinX + 50) {
                     active = false;
                     cur++;
                     if(cur < stages.length) {
-                        msg.innerText = "رائع! وصلت للكوخ 🏡";
-                        document.getElementById('btn').innerText = "دخول المرحلة " + (cur+1);
+                        msg.innerText = "أحسنتِ يا بطلة! الكوخ آمن 🏡";
+                        document.getElementById('btn').innerText = "المرحلة التالية";
                     } else {
-                        msg.innerText = "🏆 تهانينا! ختمت الـ 9 مراحل بنجاح";
-                        document.getElementById('btn').innerText = "إعادة من البداية";
+                        msg.innerText = "🏆 واو! لقد ختمتِ اللعبة كاملة!";
+                        document.getElementById('btn').innerText = "اللعب من جديد";
                         cur = 0; score = 0;
                     }
                     overlay.style.display = 'flex';
                 }
             }
 
-            if (dist > 100 && (obs.length === 0 || obs[obs.length-1].x < canvas.width - 350)) {
-                let h = Math.random() * (canvas.height - 300) + 50;
-                obs.push({ x: canvas.width, t: h, g: 250 - (cur * 5), col: s.col }); // الفتحات تصغر مع تقدم المراحل
-                if(Math.random() > 0.6) items.push({ x: canvas.width + 50, y: h + 125 });
+            // توليد العقبات
+            if (dist > 50 && (obs.length === 0 || obs[obs.length-1].x < canvas.width - 380)) {
+                let h = Math.random() * (canvas.height - 350) + 100;
+                obs.push({ x: canvas.width, t: h, g: 260, col: s.col });
+                if(Math.random() > 0.5) items.push({ x: canvas.width + 50, y: h + 130 });
             }
 
             obs.forEach((o, i) => {
                 o.x -= s.speed;
-                if(p.x+35 > o.x && p.x+15 < o.x+60 && (p.y+15 < o.t || p.y+35 > o.t+o.g)) die();
-                if(o.x < -60) obs.splice(i, 1);
+                // فحص دقيق للاصطدام
+                if(p.x+30 > o.x && p.x+10 < o.x+55 && (p.y+10 < o.t || p.y+35 > o.t+o.g)) die();
+                if(o.x < -100) obs.splice(i, 1);
             });
 
             items.forEach((f, i) => {
                 f.x -= s.speed;
-                if(Math.hypot(p.x-f.x, p.y-f.y) < 45) { score += 100; items.splice(i, 1); }
+                if(Math.hypot(p.x-f.x, p.y-f.y) < 50) { score += 100; items.splice(i, 1); }
             });
 
-            if(p.y > canvas.height || p.y < 0 || p.x < m.x + 60) die();
+            if(p.y > canvas.height || p.y < -50 || p.x < m.x + 50) die();
 
             document.getElementById('fill').style.width = (1 - (dist/1000))*100 + "%";
             document.getElementById('dist').innerText = Math.max(0, Math.floor(dist));
             document.getElementById('score').innerText = score;
         }
 
-        // الرسم الملون
-        if(cabinX > -500) ctx.drawImage(imgs.cabin, cabinX, canvas.height/2-100, 200, 200);
-        ctx.drawImage(imgs[s.m], m.x, m.y, 110, 110);
+        // رسم العناصر
+        if(cabinX > -500) ctx.drawImage(imgs.cabin, cabinX, canvas.height/2-100, 180, 180);
+        ctx.drawImage(imgs[s.m], m.x, m.y, 100, 100);
         obs.forEach(o => { 
             ctx.fillStyle = o.col; 
-            ctx.shadowBlur = 10; ctx.shadowColor = o.col;
-            ctx.fillRect(o.x, 0, 60, o.t); 
-            ctx.fillRect(o.x, o.t+o.g, 60, canvas.height); 
-            ctx.shadowBlur = 0;
+            ctx.fillRect(o.x, 0, 50, o.t); 
+            ctx.fillRect(o.x, o.t+o.g, 50, canvas.height); 
         });
         items.forEach(f => ctx.drawImage(imgs.fish, f.x, f.y, 40, 40));
         ctx.drawImage(imgs.cat, p.x, p.y, 50, 50);
@@ -177,7 +179,7 @@
 
     const jump = (e) => { 
         if(e.target.id === 'btn') return;
-        if(active) { started = true; p.v = -8.5; } 
+        if(active) { started = true; p.v = -8; } 
     };
     canvas.addEventListener('mousedown', jump);
     canvas.addEventListener('touchstart', (e) => { if(e.target.id !== 'btn') { e.preventDefault(); jump(e); } }, {passive: false});
