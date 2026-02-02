@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>اختبار المرحلة الثالثة - جبال النسور</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #001a33; font-family: sans-serif; touch-action: none; }
+        #ui { position: absolute; top: 10px; width: 100%; text-align: center; color: white; z-index: 10; pointer-events: none; }
+        #overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; color: white; z-index: 100; 
+        }
+        button { padding: 20px 50px; font-size: 25px; cursor: pointer; border-radius: 15px; border: none; background: #e67e22; color: white; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <h2 style="margin:0;">🏔️ المرحلة 3: جبال النسور</h2>
+    <p>المسافة المتبقية: <span id="dist">1000</span>m</p>
+</div>
+
+<div id="overlay">
+    <h1>جاهز لمواجهة النسر؟ 🦅</h1>
+    <button onclick="start()">ابدأ الاختبار 🐾</button>
+</div>
+
+<canvas id="c"></canvas>
+
+<script>
+    const cvs = document.getElementById('c');
+    const ctx = cvs.getContext('2d');
+    const distText = document.getElementById('dist');
+    const overlay = document.getElementById('overlay');
+
+    function resize() { cvs.width = window.innerWidth; cvs.height = window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+
+    const imgs = {
+        cat: new Image(),
+        eagle: new Image(),
+        fish: new Image()
+    };
+    imgs.cat.src = 'https://img.icons8.com/color/96/cat--v1.png';
+    imgs.eagle.src = 'https://img.icons8.com/color/150/eagle.png';
+    imgs.fish.src = 'https://img.icons8.com/color/48/fish.png';
+
+    let active = false, started = false;
+    let p = { x: 100, y: 0, v: 0 }, e = { x: -150, y: 0 }, distance = 1000, obs = [];
+
+    function start() {
+        overlay.style.display = 'none';
+        p.y = cvs.height / 2;
+        e.y = cvs.height / 2;
+        distance = 1000;
+        obs = [];
+        active = true;
+        started = false;
+    }
+
+    function loop() {
+        // الخلفية (سماء ليلية جبلية)
+        ctx.fillStyle = '#001a33';
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+        if (active && started) {
+            // الجاذبية وحركة القطة
+            p.v += 0.45; p.y += p.v;
+            distance -= 0.8;
+
+            // ذكاء النسر (يطارد من الأعلى)
+            e.y += (p.y - 80 - e.y) * 0.1; 
+            e.x = Math.min(p.x - 110, e.x + 0.2);
+
+            // إنتاج الأعمدة (بيضاء كالثلج)
+            if (obs.length === 0 || obs[obs.length-1].x < cvs.width - 350) {
+                obs.push({ x: cvs.width, t: Math.random() * (cvs.height - 300) + 50, g: 250 });
+            }
+
+            // تحديث الأعمدة والتصادم
+            obs.forEach((o, i) => {
+                o.x -= 8;
+                if(p.x+35 > o.x && p.x+15 < o.x+60 && (p.y+15 < o.t || p.y+35 > o.t+o.g)) { active = false; overlay.style.display='flex'; }
+                if(o.x < -60) obs.splice(i, 1);
+            });
+
+            // الموت عند السقوط أو لمس النسر
+            if(p.y > cvs.height || p.y < 0 || p.x < e.x + 60) { active = false; overlay.style.display='flex'; }
+
+            distText.innerText = Math.floor(distance);
+        }
+
+        // الرسم
+        ctx.drawImage(imgs.eagle, e.x, e.y, 110, 110);
+        ctx.fillStyle = "#FFFFFF"; // أعمدة بيضاء
+        obs.forEach(o => { ctx.fillRect(o.x, 0, 60, o.t); ctx.fillRect(o.x, o.t+o.g, 60, cvs.height); });
+        ctx.drawImage(imgs.cat, p.x, p.y, 50, 50);
+
+        requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('mousedown', () => { if(active) { started = true; p.v = -8; } });
+    window.addEventListener('touchstart', (ev) => { ev.preventDefault(); if(active) { started = true; p.v = -8; } }, {passive: false});
+
+    loop();
+</script>
+</body>
+</html>
