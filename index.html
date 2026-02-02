@@ -1,55 +1,74 @@
-import pygame
-import sys
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>لعبة الـ 9 مراحل</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #222; font-family: Arial, sans-serif; }
+        canvas { display: block; background: #000; }
+        #ui {
+            position: absolute; top: 20px; left: 20px;
+            color: white; font-size: 24px; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">المرحلة: <span id="stageNum">1</span> | <span id="stageName">البداية</span></div>
+    <canvas id="gameCanvas"></canvas>
 
-# إعدادات الشاشة
-WIDTH, HEIGHT = 800, 600
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("مشروع الـ 9 مراحل - النسخة المعتمدة")
-clock = pygame.time.Clock()
-font = pygame.font.SysFont("Arial", 50)
-small_font = pygame.font.SysFont("Arial", 30)
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const stageNumDisplay = document.getElementById('stageNum');
+        const stageNameDisplay = document.getElementById('stageName');
 
-# ألوان المراحل التسعة (كل مرحلة لها لون يميزها)
-STAGE_COLORS = [
-    (200, 0, 0), (0, 200, 0), (0, 0, 200), 
-    (200, 200, 0), (200, 0, 200), (0, 200, 200),
-    (100, 100, 100), (255, 165, 0), (50, 50, 50)
-]
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-class Game:
-    def __init__(self):
-        self.current_stage = 1
-        self.total_stages = 9
+        let currentStage = 1;
+        const totalStages = 9;
+        const stageNames = [
+            "البداية الأساسية", "تحدي السرعة", "منطقة العوائق", 
+            "المنصات المتحركة", "الجاذبية العكسية", "الهروب السريع", 
+            "المتاهة المظلمة", "غزو الأعداء", "مرحلة الوحش الأخير"
+        ];
 
-    def run(self):
-        while True:
-            # 1. التعامل مع الأحداث
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:  # اضغط مسافة للانتقال للمرحلة التالية
-                        if self.current_stage < self.total_stages:
-                            self.current_stage += 1
-                        else:
-                            self.current_stage = 1 # العودة للمرحلة الأولى بعد النهاية
+        // ألوان خلفيات المراحل التسعة
+        const stageColors = ['#1a1a1a', '#2c3e50', '#27ae60', '#2980b9', '#8e44ad', '#f39c12', '#d35400', '#c0392b', '#000000'];
 
-            # 2. الرسم والتحديث
-            color = STAGE_COLORS[self.current_stage - 1]
-            screen.fill(color) # تغيير لون الخلفية حسب المرحلة
+        function draw() {
+            // رسم الخلفية بناءً على المرحلة
+            ctx.fillStyle = stageColors[currentStage - 1];
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // رسم نص في منتصف الشاشة
+            ctx.fillStyle = "white";
+            ctx.font = "40px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("اضغط على الشاشة للانتقال للمرحلة التالية", canvas.width/2, canvas.height/2);
             
-            # نصوص العرض
-            title = font.render(f"STAGE {self.current_stage}", True, (255, 255, 255))
-            hint = small_font.render("Press SPACE to Next Stage", True, (255, 255, 255))
-            
-            screen.blit(title, (WIDTH//2 - 100, HEIGHT//2 - 50))
-            screen.blit(hint, (WIDTH//2 - 150, HEIGHT//2 + 50))
+            // تحديث واجهة المستخدم
+            stageNumDisplay.innerText = currentStage;
+            stageNameDisplay.innerText = stageNames[currentStage - 1];
+        }
 
-            pygame.display.flip()
-            clock.tick(60)
+        // الانتقال للمرحلة التالية عند الضغط
+        window.addEventListener('mousedown', () => {
+            if (currentStage < totalStages) {
+                currentStage++;
+            } else {
+                currentStage = 1; // العودة للمرحلة الأولى
+            }
+            draw();
+        });
 
-if __name__ == "__main__":
-    game = Game()
-    game.run()
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        });
+
+        draw();
+    </script>
+</body>
+</html>
