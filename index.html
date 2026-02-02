@@ -2,25 +2,25 @@
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <title>لعبة القطة والنسر - 9 مراحل</title>
+    <title>لعبة القطة والنسر - نسخة الألوان الكاملة</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial', sans-serif; }
-        canvas { display: block; cursor: crosshair; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
         #ui {
-            position: absolute; top: 15px; left: 15px;
-            color: #fff; background: rgba(0,0,0,0.7);
-            padding: 15px; border-radius: 12px; border: 2px solid #ffcc00;
-            font-size: 20px; line-height: 1.5; pointer-events: none;
+            position: absolute; top: 20px; left: 20px;
+            color: #fff; background: linear-gradient(45deg, rgba(255,0,150,0.3), rgba(0,204,255,0.3));
+            padding: 15px; border-radius: 15px; border: 2px solid #fff;
+            box-shadow: 0 0 15px #ff00ff; backdrop-filter: blur(5px);
+            font-weight: bold; font-size: 18px;
         }
-        .highlight { color: #ffcc00; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        المرحلة: <span id="lvl" class="highlight">1</span> / 9<br>
-        النقاط: <span id="score" class="highlight">0</span><br>
-        الجوائز: <span id="rem" class="highlight">0</span>
+        🌈 المرحلة: <span id="lvl">1</span> / 9<br>
+        💎 النقاط: <span id="score">0</span><br>
+        🎁 الجوائز: <span id="rem">0</span>
     </div>
 
     <canvas id="game"></canvas>
@@ -28,146 +28,118 @@
     <script>
         const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
-
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // متغيرات اللعبة
         let stage = 1;
         let score = 0;
-        let gameActive = true;
+        let cat = { x: 100, y: 200, w: 50, h: 40, dy: 0, gravity: 0.5, jump: -11 };
+        let eagle = { x: canvas.width + 100, y: 100, w: 80, h: 60, speed: 4 };
+        let items = [];
+        let stars = []; // لخلفية السماء اللامعة
 
-        // ألوان السماء لكل مرحلة (تتدرج من الفاتح للغامق)
-        const skyColors = ['#87CEEB', '#00BFFF', '#1E90FF', '#4682B4', '#6A5ACD', '#483D8B', '#191970', '#000080', '#000000'];
-
-        // تعريف القطة
-        let cat = { x: 100, y: 200, w: 60, h: 50, dy: 0, gravity: 0.6, jump: -12, color: '#FFFFFF' };
-        
-        // الكائنات
-        let items = []; // جوائز وكوبونات
-        let platforms = []; // منصات
-        let eagle = { x: canvas.width + 100, y: 100, w: 100, h: 70, speed: 3 };
+        // توليد نجوم للخلفية
+        for(let i=0; i<100; i++) stars.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*2});
 
         function initStage(n) {
             stage = n;
             items = [];
-            platforms = [];
-            cat.y = 200;
-            cat.dy = 0;
-            eagle.x = canvas.width + 200;
-            eagle.speed = 2 + (stage * 1.2); // النسر يسرع كل مرحلة
-
-            // إضافة منصات
-            for(let i=0; i<5; i++) {
-                platforms.push({ x: i * 300, y: canvas.height - 150 - (Math.random()*200), w: 200, h: 20 });
-            }
-
-            // إضافة جوائز وكوبونات
-            for(let i=0; i < (5 + stage); i++) {
+            eagle.x = canvas.width + 500;
+            eagle.speed = 3 + n;
+            // توزيع جوائز ملونة متوهجة
+            for(let i=0; i < (6 + n); i++) {
                 items.push({ 
-                    x: 200 + (Math.random()*(canvas.width-300)), 
-                    y: Math.random()*(canvas.height-200), 
-                    w: 30, h: 30, 
-                    type: Math.random() > 0.7 ? 'coupon' : 'star' 
+                    x: 200 + Math.random()*(canvas.width-300), 
+                    y: 100 + Math.random()*(canvas.height-300), 
+                    c: `hsl(${Math.random()*360}, 100%, 50%)`, // ألوان عشوائية مشعة
+                    type: Math.random() > 0.8 ? 'coupon' : 'gift'
                 });
             }
             document.getElementById('lvl').innerText = stage;
             document.getElementById('rem').innerText = items.length;
         }
 
-        window.addEventListener('keydown', (e) => {
-            if(e.code === 'Space') cat.dy = cat.jump;
-        });
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') cat.dy = cat.jump; });
+        window.onclick = () => cat.dy = cat.jump;
 
-        // النقر للشاشات اللمسية
-        window.addEventListener('touchstart', () => cat.dy = cat.jump);
+        function draw() {
+            // 1. خلفية ملونة متدرجة تتغير حسب المرحلة
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, `hsl(${stage * 40}, 70%, 20%)`);
+            bgGrad.addColorStop(1, `hsl(${stage * 40 + 100}, 70%, 5%)`);
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        function update() {
-            if(!gameActive) return;
+            // رسم النجوم المتلألئة
+            ctx.fillStyle = "white";
+            stars.forEach(s => ctx.fillRect(s.x, s.y, s.s, s.s));
 
-            // جاذبية القطة
-            cat.dy += cat.gravity;
-            cat.y += cat.dy;
+            // 2. رسم القطة (تصميم ملون)
+            ctx.save();
+            ctx.shadowBlur = 20; ctx.shadowColor = "#fff";
+            ctx.fillStyle = "#f0f0f0"; // جسم القطة
+            ctx.beginPath();
+            ctx.ellipse(cat.x + 25, cat.y + 20, 25, 20, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = "#ffccff"; // أذني القطة
+            ctx.beginPath();
+            ctx.moveTo(cat.x+5, cat.y+5); ctx.lineTo(cat.x+15, cat.y-10); ctx.lineTo(cat.x+25, cat.y+5); ctx.fill();
+            ctx.restore();
 
-            // حدود الأرض
-            if(cat.y + cat.h > canvas.height) {
-                cat.y = canvas.height - cat.h;
-                cat.dy = 0;
-            }
-
-            // حركة النسر (يلاحق القطة من المرحلة 3)
+            // 3. رسم النسر (من المرحلة 3) - نسر ناري
             if(stage >= 3) {
                 eagle.x -= eagle.speed;
-                if(eagle.y < cat.y) eagle.y += 1; else eagle.y -= 1;
-                
-                if(eagle.x + eagle.w < 0) eagle.x = canvas.width + 100;
+                if(eagle.y < cat.y) eagle.y += 1.5; else eagle.y -= 1.5;
+                if(eagle.x < -100) eagle.x = canvas.width + 200;
 
-                // اصطدام مع النسر
-                if(cat.x < eagle.x + eagle.w && cat.x + cat.w > eagle.x && cat.y < eagle.y + eagle.h && cat.y + cat.h > eagle.y) {
-                    alert("أمسك بك النسر! حاول مجدداً");
-                    score = 0;
-                    initStage(1);
+                ctx.fillStyle = "#FF4500"; // لون ناري
+                ctx.shadowBlur = 15; ctx.shadowColor = "red";
+                ctx.beginPath();
+                ctx.moveTo(eagle.x, eagle.y);
+                ctx.lineTo(eagle.x+80, eagle.y-20); ctx.lineTo(eagle.x+80, eagle.y+40);
+                ctx.fill();
+                ctx.fillStyle = "yellow"; // منقار
+                ctx.fillRect(eagle.x-10, eagle.y+10, 15, 10);
+                
+                // اصطدام
+                if(Math.hypot(cat.x-eagle.x, cat.y-eagle.y) < 40) {
+                    alert("النسر هزمك! عد للمرحلة الأولى");
+                    score = 0; initStage(1);
                 }
             }
 
-            // جمع الجوائز
-            items.forEach((item, index) => {
-                if(cat.x < item.x + item.w && cat.x + cat.w > item.x && cat.y < item.y + item.h && cat.y + cat.h > item.y) {
-                    items.splice(index, 1);
-                    score += (item.type === 'coupon' ? 50 : 10);
+            // 4. رسم الجوائز (دوائر متوهجة ملونة)
+            items.forEach((item, i) => {
+                ctx.shadowBlur = 15; ctx.shadowColor = item.c;
+                ctx.fillStyle = item.c;
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, 15, 0, Math.PI*2);
+                ctx.fill();
+                
+                // جمع الجوائز
+                if(Math.hypot(cat.x-item.x, cat.y-item.y) < 40) {
+                    items.splice(i, 1);
+                    score += (item.type === 'coupon' ? 100 : 20);
                     document.getElementById('score').innerText = score;
                     document.getElementById('rem').innerText = items.length;
-
                     if(items.length === 0) {
                         if(stage < 9) initStage(stage + 1);
-                        else alert("مبروك يا بطل ختمت الـ 9 مراحل!");
+                        else alert("أنت بطل حقيقي! أنهيت الـ 9 مراحل!");
                     }
                 }
             });
-        }
 
-        function draw() {
-            // رسم الخلفية الملونة
-            ctx.fillStyle = skyColors[stage-1];
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // تحديث حركة القطة
+            cat.dy += cat.gravity;
+            cat.y += cat.dy;
+            if(cat.y > canvas.height - 50) { cat.y = canvas.height - 50; cat.dy = 0; }
+            if(cat.y < 0) cat.y = 0;
 
-            // رسم العشب
-            ctx.fillStyle = '#2d5a27';
-            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
-
-            // رسم المنصات (خشبية)
-            ctx.fillStyle = '#8B4513';
-            platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width || p.w, p.height || p.h));
-
-            // رسم القطة (بيضاء مع أجنحة صغيرة)
-            ctx.fillStyle = 'white';
-            ctx.fillRect(cat.x, cat.y, cat.w, cat.h);
-            ctx.fillStyle = 'pink'; // أذن القطة
-            ctx.fillRect(cat.x, cat.y, 10, 10);
-
-            // رسم النسر (بني مع منقار أصفر)
-            if(stage >= 3) {
-                ctx.fillStyle = '#5C4033';
-                ctx.fillRect(eagle.x, eagle.y, eagle.w, eagle.h);
-                ctx.fillStyle = 'yellow';
-                ctx.fillRect(eagle.x - 10, eagle.y + 20, 15, 15); // المنقار
-            }
-
-            // رسم الجوائز
-            items.forEach(item => {
-                ctx.fillStyle = item.type === 'coupon' ? '#FFD700' : '#FF4500';
-                ctx.beginPath();
-                ctx.arc(item.x + 15, item.y + 15, 15, 0, Math.PI*2);
-                ctx.fill();
-            });
-
-            update();
             requestAnimationFrame(draw);
         }
 
         initStage(1);
         draw();
-
     </script>
 </body>
 </html>
