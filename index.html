@@ -2,704 +2,174 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐱 هروب القطة - Cat Runner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🐱 هروب القطة | Cat Runner</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #0a0a0a;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-  }
-  canvas {
-    border: 3px solid #e74c3c;
-    border-radius: 8px;
-    box-shadow: 0 0 30px rgba(231,76,60,0.4);
-  }
-  #ui-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  #start-screen, #gameover-screen, #win-screen {
-    background: rgba(0,0,0,0.85);
-    padding: 40px 60px;
-    border-radius: 16px;
-    text-align: center;
-    color: white;
-    pointer-events: all;
-    border: 2px solid #e74c3c;
-  }
-  #start-screen h1 { font-size: 42px; margin-bottom: 10px; }
-  #start-screen h2 { font-size: 28px; color: #f39c12; margin-bottom: 20px; }
-  #start-screen p { font-size: 18px; margin: 8px 0; color: #bdc3c7; }
-  .btn {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 14px 40px;
-    font-size: 22px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: 0.3s;
-  }
-  .btn:hover { background: #c0392b; transform: scale(1.05); }
-  .hidden { display: none !important; }
-  #hud {
-    position: absolute;
-    top: 10px; left: 10px; right: 10px;
-    display: flex;
-    justify-content: space-between;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-    pointer-events: none;
-  }
-  #hud div { background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 8px; }
-  #level-announce {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    color: #f39c12;
-    font-size: 48px;
-    font-weight: bold;
-    text-shadow: 3px 3px 6px #000;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.5s;
-  }
-  #powerup-indicator {
-    position: absolute;
-    bottom: 10px; left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-    pointer-events: none;
-  }
-  .powerup-icon {
-    background: rgba(0,0,0,0.6);
-    padding: 6px 14px;
-    border-radius: 20px;
-    color: white;
-    font-size: 16px;
-  }
-  #progress-bar-container {
-    position: absolute;
-    bottom: 50px; left: 50%;
-    transform: translateX(-50%);
-    width: 400px; height: 12px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 6px;
-    overflow: hidden;
-    pointer-events: none;
-  }
-  #progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #e74c3c, #f39c12);
-    border-radius: 6px;
-    transition: width 0.1s;
-  }
-  #progress-label {
-    position: absolute;
-    bottom: 65px; left: 50%;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,0.7);
-    font-size: 14px;
-    pointer-events: none;
-  }
-  #fear-overlay {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    opacity: 0;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(139,0,0,0.6) 100%);
-    transition: opacity 0.3s;
-  }
-  #screen-shake {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-  }
-  .shake { animation: shake 0.5s ease-in-out; }
-  @keyframes shake {
-    0%, 100% { transform: translate(0,0); }
-    20% { transform: translate(-5px, 3px); }
-    40% { transform: translate(5px, -3px); }
-    60% { transform: translate(-3px, 5px); }
-    80% { transform: translate(3px, -5px); }
-  }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#05060a;font-family:'Segoe UI',Tahoma,sans-serif;color:#fff;user-select:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+canvas{display:block;background:#0a0e17;touch-action:none;box-shadow:0 0 40px rgba(0,0,0,.8)}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;top:0;left:0;right:0;display:none;justify-content:space-between;
+ align-items:flex-start;padding:10px;pointer-events:none;z-index:5;gap:6px;flex-wrap:wrap}
+.chip{background:rgba(8,12,20,.7);border:1px solid rgba(255,255,255,.12);padding:6px 12px;
+ border-radius:999px;font-size:clamp(12px,3vw,17px);font-weight:700;backdrop-filter:blur(6px);white-space:nowrap}
+#dangerBar{position:absolute;top:0;left:0;height:4px;width:0%;
+ background:linear-gradient(90deg,#f1c40f,#e74c3c);z-index:6;transition:width .1s linear}
+
+/* ---------- Screens ---------- */
+.screen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+ padding:16px;z-index:20;overflow:auto;
+ background:radial-gradient(circle at 50% 0%,rgba(120,40,200,.25),rgba(5,6,10,.97) 60%)}
+.screen.show{display:flex}
+.card{width:min(460px,100%);background:linear-gradient(160deg,rgba(30,20,60,.95),rgba(10,12,25,.98));
+ border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:22px;text-align:center;
+ box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08)}
+.logo{font-size:clamp(30px,9vw,46px);font-weight:900;line-height:1.1;
+ background:linear-gradient(90deg,#ffd166,#ff5e62,#a55eea);-webkit-background-clip:text;
+ background-clip:text;color:transparent;filter:drop-shadow(0 4px 12px rgba(255,94,98,.35))}
+.sub{color:#b9c0d4;margin:6px 0 14px;font-size:clamp(13px,3.6vw,16px)}
+.monsters{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px}
+.mchip{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+ border-radius:10px;padding:5px 8px;font-size:clamp(11px,3vw,14px)}
+.btn{width:100%;border:0;border-radius:14px;padding:14px;font-size:clamp(16px,4.5vw,20px);
+ font-weight:800;color:#fff;cursor:pointer;margin-top:10px;transition:transform .12s,filter .2s;
+ background:linear-gradient(135deg,#ff5e62,#a55eea);box-shadow:0 10px 24px rgba(165,94,234,.35)}
+.btn:active{transform:scale(.97)}
+.btn.alt{background:linear-gradient(135deg,#00b894,#0984e3);box-shadow:0 10px 24px rgba(9,132,227,.3)}
+.btn.ghost{background:rgba(255,255,255,.08);box-shadow:none;font-size:15px}
+.row{display:flex;gap:8px}
+.hint{margin-top:12px;font-size:12px;color:#8a93ab;line-height:1.7}
+
+/* leaderboard */
+.lb{list-style:none;text-align:right;margin-top:10px;max-height:240px;overflow:auto}
+.lb li{display:flex;justify-content:space-between;gap:8px;padding:9px 12px;margin-bottom:6px;
+ background:rgba(255,255,255,.05);border-radius:10px;font-size:14px;border-right:3px solid #a55eea}
+.lb li:nth-child(1){border-color:#ffd166}.lb li:nth-child(2){border-color:#cfd8dc}.lb li:nth-child(3){border-color:#e07a2f}
+input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);
+ background:rgba(0,0,0,.35);color:#fff;font-size:16px;text-align:center;margin-top:8px}
+
+/* ad modal */
+#adBox{position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:40;
+ background:rgba(0,0,0,.92);padding:16px}
+#adBox.show{display:flex}
+.adCard{width:min(420px,100%);text-align:center;background:#11142a;border-radius:18px;padding:20px;
+ border:1px solid rgba(255,255,255,.12)}
+.adSlot{min-height:180px;border-radius:12px;margin:14px 0;display:flex;align-items:center;
+ justify-content:center;flex-direction:column;gap:8px;
+ background:repeating-linear-gradient(45deg,#1b1f3a,#1b1f3a 12px,#20264a 12px,#20264a 24px);
+ color:#c9d0e8;padding:16px;font-size:14px;line-height:1.8}
+.countdown{font-size:26px;font-weight:900;color:#ffd166}
+
+/* touch buttons */
+#touch{position:absolute;bottom:0;left:0;right:0;display:none;justify-content:space-between;
+ padding:14px;z-index:8;pointer-events:none}
+.tbtn{pointer-events:auto;width:74px;height:74px;border-radius:50%;
+ background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25);
+ display:flex;align-items:center;justify-content:center;font-size:30px;backdrop-filter:blur(4px)}
+.tbtn:active{background:rgba(255,255,255,.3)}
 </style>
 </head>
 <body>
+<div id="wrap"><canvas id="cv"></canvas></div>
 
-<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="dangerBar"></div>
 
-<div id="hud" class="hidden">
-  <div>💰 <span id="coin-count">0</span></div>
-  <div>🐱 <span id="lives">❤️❤️❤️</span></div>
-  <div>⭐ <span id="score">0</span></div>
-  <div>📍 <span id="level-name">المرحلة 1</span></div>
+<div id="hud">
+  <div class="chip">⭐ <span id="score">0</span></div>
+  <div class="chip">💰 <span id="coins">0</span></div>
+  <div class="chip">❤️ <span id="lives">3</span></div>
+  <div class="chip">🏁 <span id="lvl">1/12</span></div>
 </div>
 
-<div id="level-announce"></div>
-
-<div id="progress-bar-container" class="hidden">
-  <div id="progress-bar" style="width: 0%"></div>
+<!-- ===== START ===== -->
+<div class="screen show" id="sStart">
+  <div class="card">
+    <div class="logo">🐱 هروب القطة</div>
+    <div class="sub">اهربي من الوحش… 12 مرحلة… كوخ واحد ينقذك 🏡</div>
+    <div class="monsters" id="mList"></div>
+    <button class="btn" id="btnPlay">▶ ابدأ اللعب</button>
+    <button class="btn alt" id="btnLB">🏆 لوحة الصدارة</button>
+    <div class="hint">⬆️ قفز &nbsp;|&nbsp; ⬇️ انحناء &nbsp;|&nbsp; على الجوال: المس يمين = قفز، يسار = انحناء<br>اجمع 💰 السمك 🐟 والقوى ⚡ وتجنب الأشواك والأخطار</div>
+  </div>
 </div>
-<div id="progress-label" class="hidden">التقدم</div>
 
-<div id="powerup-indicator" class="hidden"></div>
-
-<div id="fear-overlay"></div>
-<div id="screen-shake"></div>
-
-<div id="ui-overlay">
-  <div id="start-screen">
-    <h1>🐱 هروب القطة</h1>
-    <h2>Cat Runner</h2>
-    <p>🐺 ذئب → 🐍 ثعبان → 🐻‍❄️ دب → 🐉 تنين → 👻 شبح</p>
-    <p>🧟 زومبي → 🦈 قرش → 👽 فضائي → 😈 شيطان → ⏰ وحش الزمن → 👹 الوحش النهائي</p>
-    <p style="margin-top:15px;">🚧 حواجز ومطبات ودهاليز ورعب!</p>
-    <p>💰 عملات + 🐟 سمكات + ⚡ قوى إضافية</p>
-    <p style="margin-top:10px;">🏡 كوخ النهاية للاختباء والتزود بالقوة!</p>
-    <p style="margin-top:15px; color:#f39c12;">⬆️ قفز | ⬇️ انحناء | مسافة = قفز</p>
-    <button class="btn" onclick="startGame()">🎮 ابدأ اللعبة</button>
+<!-- ===== GAME OVER ===== -->
+<div class="screen" id="sOver">
+  <div class="card">
+    <div class="logo" style="font-size:clamp(24px,7vw,34px)">💀 قبض عليك!</div>
+    <div class="sub" id="overWho"></div>
+    <div class="chip" style="display:inline-block;margin-bottom:6px">النقاط: <b id="overScore">0</b></div><br>
+    <div class="chip" style="display:inline-block;margin:6px 0 10px">المرحلة: <b id="overLvl">1</b></div>
+    <input id="playerName" placeholder="اكتب اسمك لحفظ نقاطك 🏅" maxlength="14">
+    <button class="btn" id="btnSave">💾 احفظ النقاط</button>
+    <button class="btn ghost" id="btnRetry">🔄 إعادة المحاولة</button>
   </div>
+</div>
 
-  <div id="gameover-screen" class="hidden">
-    <h1>💀 قبض عليك الوحش!</h1>
-    <h2 id="gameover-monster"></h2>
-    <p>النقاط: <span id="gameover-score">0</span></p>
-    <p>العملات: <span id="gameover-coins">0</span></p>
-    <p>المرحلة: <span id="gameover-level">1</span></p>
-    <button class="btn" onclick="restartGame()">🔄 حاول مرة أخرى</button>
+<!-- ===== WIN ===== -->
+<div class="screen" id="sWin">
+  <div class="card">
+    <div class="logo">🎉 أنت أسطورة!</div>
+    <div class="sub">القطة وصلت للكوخ الآمن وهربت من كل الوحوش 🏡✨</div>
+    <div class="chip" style="display:inline-block;margin-bottom:10px">النهائي: <b id="winScore">0</b></div>
+    <input id="winName" placeholder="اسمك للبطل 🥇" maxlength="14">
+    <button class="btn" id="btnSaveWin">💾 حفظ البطل</button>
+    <button class="btn ghost" id="btnAgain">🔁 العب من جديد</button>
   </div>
+</div>
 
-  <div id="win-screen" class="hidden">
-    <h1>🎉 مبروك! أنقذت القطة!</h1>
-    <h2>🏡 وصلت للكوخ الآمن!</h2>
-    <p>النقاط النهائية: <span id="win-score">0</span></p>
-    <p>إجمالي العملات: <span id="win-coins">0</span></p>
-    <p>جميع المراحل مكتملة! 🌟</p>
-    <button class="btn" onclick="restartGame()">🔄 العب مرة أخرى</button>
+<!-- ===== LEADERBOARD ===== -->
+<div class="screen" id="sLB">
+  <div class="card">
+    <div class="logo" style="font-size:clamp(24px,7vw,34px)">🏆 لوحة الصدارة</div>
+    <ul class="lb" id="lbList"></ul>
+    <button class="btn ghost" id="btnBack">⬅ رجوع</button>
   </div>
+</div>
+
+<!-- ===== AD ===== -->
+<div id="adBox">
+  <div class="adCard">
+    <h3>📺 استراحة الكوخ</h3>
+    <p style="color:#9aa3bd;font-size:13px">شاهد الإعلان لتستأنف المغامرة</p>
+    <div class="adSlot" id="adSlot">
+      <div style="font-size:34px">📢</div>
+      <div><b>مساحة إعلانية</b></div>
+      <div>ضع هنا كود AdMob / AdSense الحقيقي</div>
+    </div>
+    <div class="countdown" id="adCount">5</div>
+    <button class="btn" id="adClose" disabled>انتظر…</button>
+  </div>
+</div>
+
+<div id="touch">
+  <div class="tbtn" id="tDuck">⬇️</div>
+  <div class="tbtn" id="tJump">⬆️</div>
 </div>
 
 <script>
-// ============ GAME ENGINE ============
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-// === LEVEL CONFIG ===
-const MONSTERS = [
-  { name:'ذئب', emoji:'🐺', color:'#8d99ae', speed:1.8 },
-  { name:'ثعبان', emoji:'🐍', color:'#27ae60', speed:2.1 },
-  { name:'خفاش عملاق', emoji:'🦇', color:'#6c3483', speed:2.3 },
-  { name:'دب قطبي', emoji:'🐻‍❄️', color:'#ecf0f1', speed:2.5 },
-  { name:'تنين', emoji:'🐉', color:'#e74c3c', speed:2.8 },
-  { name:'شبح', emoji:'👻', color:'#bdc3c7', speed:3.0 },
-  { name:'زومبي', emoji:'🧟', color:'#2ecc71', speed:3.2 },
-  { name:'قرش', emoji:'🦈', color:'#3498db', speed:3.4 },
-  { name:'فضائي', emoji:'👽', color:'#1abc9c', speed:3.6 },
-  { name:'شيطان', emoji:'😈', color:'#e67e22', speed:3.8 },
-  { name:'وحش الزمن', emoji:'⏰', color:'#9b59b6', speed:4.0 },
-  { name:'الوحش النهائي', emoji:'👹', color:'#c0392b', speed:4.3 }
+"use strict";
+/* ==================== CONFIG ==================== */
+const MONSTERS=[
+ {n:"ذئب",e:"🐺",c:"#8d99ae",sp:1.55},{n:"ثعلب",e:"🦊",c:"#e07a2f",sp:1.75},
+ {n:"كلب بري",e:"🐕",c:"#9c6b3f",sp:1.95},{n:"نمر",e:"🐆",c:"#e8b21f",sp:2.15},
+ {n:"دب",e:"🐻",c:"#5b4636",sp:2.30},{n:"تمساح",e:"🐊",c:"#3f7d4e",sp:2.45},
+ {n:"قرش",e:"🦈",c:"#4a6fa5",sp:2.60},{n:"غول مستنقع",e:"🧌",c:"#5c6b3c",sp:2.75},
+ {n:"غول كهف",e:"👺",c:"#6b4f8a",sp:2.90},{n:"شبح",e:"👻",c:"#b8c0d8",sp:3.05},
+ {n:"تنين",e:"🐲",c:"#b3312c",sp:3.25},{n:"شيطان الظل",e:"😈",c:"#2b2b3a",sp:3.50}
 ];
-
-const LEVEL_THEMES = [
-  { bg1:'#1a1a2e', bg2:'#16213e', ground:'#2d3436', name:'الغابة المظلمة' },
-  { bg1:'#e17055', bg2:'#fdcb6e', ground:'#d4a574', name:'الصحراء الحارة' },
-  { bg1:'#0c0c1d', bg2:'#1a1a3e', ground:'#2c3e50', name:'الكهف المظلم' },
-  { bg1:'#74b9ff', bg2:'#dfe6e9', ground:'#f5f6fa', name:'الجبال الثلجية' },
-  { bg1:'#d63031', bg2:'#e17055', ground:'#2d3436', name:'البركان النشط' },
-  { bg1:'#00b894', bg2:'#55efc4', ground:'#2d3436', name:'الغابة السحرية' },
-  { bg1:'#2d3436', bg2:'#636e72', ground:'#555', name:'المدينة المهجورة' },
-  { bg1:'#0984e3', bg2:'#74b9ff', ground:'#0a3d62', name:'المحيط العميق' },
-  { bg1:'#0c0c1d', bg2:'#2d3436', ground:'#636e72', name:'الفضاء الخارجي' },
-  { bg1:'#2d033b', bg2:'#6a0572', ground:'#1a1a2e', name:'عالم الظلام' },
-  { bg1:'#fdcb6e', bg2:'#e17055', ground:'#2d3436', name:'الزمن المضطرب' },
-  { bg1:'#d63031', bg2:'#2d033b', ground:'#1a1a2e', name:'البوابة النهائية' }
+const THEMES=[
+ ["#1a1a2e","#16213e","#2d3436","الغابة المظلمة"],["#e17055","#fdcb6e","#c99b6a","الصحراء الحارة"],
+ ["#0c0c1d","#1a1a3e","#2c3e50","الكهف المظلم"],["#74b9ff","#dfe6e9","#eef2f7","الجبال الثلجية"],
+ ["#d63031","#e17055","#3a2a2a","البركان النشط"],["#00b894","#55efc4","#2d3436","الغابة السحرية"],
+ ["#2d3436","#636e72","#4a4a4a","المدينة المهجورة"],["#0984e3","#74b9ff","#0a3d62","المحيط العميق"],
+ ["#0c0c1d","#2d3436","#636e72","الفضاء الخارجي"],["#2d033b","#6a0572","#1a1a2e","عالم الظلام"],
+ ["#fdcb6e","#e17055","#3a2a2a","الزمن المضطرب"],["#d63031","#2d033b","#1a1a2e","البوابة النهائية"]
 ];
+const W=900,H=520,GY=430,GRAV=.62,JUMP=-12.8,BASE=4.6;
 
-// === GAME STATE ===
-let game = {
-  running: false,
-  paused: false,
-  level: 0,
-  score: 0,
-  coins: 0,
-  lives: 3,
-  worldX: 0,
-  cameraX: 0,
-  levelLength: 0,
-  endX: 0,
-  fearLevel: 0,
-  powerups: {},
-  powerupTimers: {},
-  hutReached: false,
-  hutAnimTimer: 0
-};
-
-// === PLAYER ===
-let player = {
-  x: 60, y: 0, w: 36, h: 40,
-  vx: 0, vy: 0,
-  onGround: false,
-  speed: 4.5,
-  jumpForce: 12,
-  gravity: 0.62,
-  ducking: false,
-  invincible: false,
-  shield: false,
-  magnet: false,
-  speedBoost: false,
-  trail: []
-};
-
-// === ENTITIES ===
-let obstacles = [];
-let coins = [];
-let fishes = [];
-let powerupItems = [];
-let monster = { x: -200, emoji: '🐺', speed: 2 };
-let particles = [];
-let stars = [];
-
-// === GENERATE LEVEL ===
-function generateLevel(levelNum) {
-  const config = LEVEL_THEMES[levelNum];
-  const monsterConfig = MONSTERS[levelNum];
-  const length = 3000 + levelNum * 420;
-  const GROUND_Y = 480;
-  const endX = length - 300;
-
-  obstacles = [];
-  coins = [];
-  fishes = [];
-  powerupItems = [];
-  particles = [];
-
-  let x = 420;
-  const rng = mulberry32(1000 + levelNum * 77);
-
-  while (x < endX - 300) {
-    const roll = rng();
-    if (roll < 0.22) {
-      const w = 150 + Math.floor(rng() * 120);
-      obstacles.push({ x: x, y: GROUND_Y - 140, w: w, h: 20, type: 'ceiling' });
-      if (rng() < 0.6) coins.push({ x: x + w/2, y: GROUND_Y - 80, collected: false });
-      x += w + 60;
-    } else if (roll < 0.45) {
-      const count = 2 + Math.floor(rng() * 3);
-      for (let i = 0; i < count; i++) {
-        const bh = 14 + rng() * 12;
-        obstacles.push({ x: x + i * 65, y: GROUND_Y - bh, w: 50, h: bh, type: 'bump' });
-        if (rng() < 0.5) coins.push({ x: x + i * 65 + 25, y: GROUND_Y - 90, collected: false });
-      }
-      x += count * 65 + 80;
-    } else if (roll < 0.62) {
-      const w = 35 + Math.floor(rng() * 40);
-      obstacles.push({ x: x, y: GROUND_Y - 18, w: w, h: 18, type: 'spike' });
-      x += w + 100 + rng() * 40;
-    } else if (roll < 0.82) {
-      const gap = 80 + Math.floor(rng() * (50 + levelNum * 8));
-      const floatY = GROUND_Y - (60 + rng() * 80);
-      obstacles.push({ x: x + gap, y: floatY, w: 100 + rng() * 60, h: 16, type: 'float' });
-      coins.push({ x: x + gap + 50, y: floatY - 50, collected: false });
-      if (rng() < 0.35) fishes.push({ x: x + gap + 50, y: floatY - 85, collected: false });
-      x += gap + 180;
-    } else {
-      const steps = 3 + Math.floor(rng() * 3);
-      for (let i = 0; i < steps; i++) {
-        const py = GROUND_Y - 50 - i * 50;
-        obstacles.push({ x: x + i * 85, y: py, w: 75, h: 14, type: 'float' });
-        coins.push({ x: x + i * 85 + 38, y: py - 45, collected: false });
-      }
-      x += steps * 85 + 100;
-    }
-    if (rng() < 0.16) {
-      const kinds = ['shield','speed','magnet'];
-      powerupItems.push({ x: x - 50, y: GROUND_Y - 110, kind: kinds[Math.floor(rng()*3)], collected: false });
-    }
-    if (rng() < 0.28) fishes.push({ x: x - 120, y: GROUND_Y - 100, collected: false });
-  }
-
-  // Generate stars for space levels
-  stars = [];
-  if (levelNum >= 8) {
-    for (let i = 0; i < 100; i++) {
-      stars.push({ x: Math.random() * length, y: Math.random() * 400, size: 1 + Math.random() * 2, twinkle: Math.random() * Math.PI * 2 });
-    }
-  }
-
-  game.levelLength = length;
-  game.endX = endX;
-  game.fearLevel = Math.min(0.9, 0.1 + (levelNum / 12) * 0.8);
-
-  // Monster position
-  monster = {
-    x: -260 - monsterConfig.speed * 35,
-    emoji: monsterConfig.emoji,
-    speed: monsterConfig.speed,
-    name: monsterConfig.name
-  };
-
-  player.x = 60;
-  player.y = GROUND_Y;
-  player.vx = 0;
-  player.vy = 0;
-  player.onGround = true;
-  player.ducking = false;
-  player.invincible = false;
-  player.shield = false;
-  player.magnet = false;
-  player.speedBoost = false;
-  player.trail = [];
-
-  game.worldX = 0;
-  game.cameraX = 0;
-  game.hutReached = false;
-  game.hutAnimTimer = 0;
-}
-
-// === PRNG ===
-function mulberry32(a) {
-  return function() {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-// === INPUT ===
-const keys = {};
-window.addEventListener('keydown', e => {
-  keys[e.code] = true;
-  if (e.code === 'Space' || e.code === 'ArrowUp') e.preventDefault();
-  if (e.code === 'KeyR') restartGame();
-});
-window.addEventListener('keyup', e => { keys[e.code] = false; });
-
-// === COLLISION ===
-function rectCollision(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-function pointInRect(px, py, r) {
-  return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
-}
-
-// === PARTICLES ===
-function spawnParticles(x, y, color, count) {
-  for (let i = 0; i < count; i++) {
-    particles.push({
-      x: x, y: y,
-      vx: (Math.random() - 0.5) * 6,
-      vy: (Math.random() - 0.5) * 6 - 2,
-      life: 30 + Math.random() * 20,
-      color: color,
-      size: 2 + Math.random() * 4
-    });
-  }
-}
-
-// === UPDATE ===
-function update() {
-  if (!game.running || game.paused) return;
-
-  const GROUND_Y = 480;
-  const currentTheme = LEVEL_THEMES[game.level];
-
-  // Player movement
-  let targetSpeed = player.speed;
-  if (player.speedBoost) targetSpeed *= 1.6;
-  if (keys['ArrowDown'] || keys['KeyS']) {
-    player.ducking = true;
-    targetSpeed *= 0.7;
-  } else {
-    player.ducking = false;
-  }
-
-  if (keys['Space'] || keys['ArrowUp'] || keys['KeyW']) {
-    if (player.onGround) {
-      player.vy = -player.jumpForce;
-      player.onGround = false;
-      spawnParticles(player.x + player.w/2, player.y + player.h, '#f39c12', 5);
-    }
-  }
-
-  // Physics
-  player.vy += player.gravity;
-  player.x += targetSpeed;
-  player.y += player.vy;
-
-  // Ground collision
-  let onPlatform = false;
-  for (const obs of obstacles) {
-    if (obs.type === 'ceiling') continue;
-    if (player.x + player.w > obs.x && player.x < obs.x + obs.w) {
-      if (player.y + player.h >= obs.y && player.y + player.h <= obs.y + 15 && player.vy >= 0) {
-        player.y = obs.y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-        onPlatform = true;
-      }
-    }
-  }
-
-  if (!onPlatform && player.y + player.h >= GROUND_Y) {
-    player.y = GROUND_Y - player.h;
-    player.vy = 0;
-    player.onGround = true;
-  }
-
-  if (!onPlatform && player.y + player.h < GROUND_Y) {
-    player.onGround = false;
-  }
-
-  // Player dimensions
-  let pH = player.ducking ? player.h * 0.6 : player.h;
-  let pY = player.ducking ? player.y + (player.h - pH) : player.y;
-
-  // Trail
-  player.trail.push({ x: player.x, y: player.y + player.h/2 });
-  if (player.trail.length > 8) player.trail.shift();
-
-  // Spike collision
-  if (!player.invincible) {
-    for (const obs of obstacles) {
-      if (obs.type === 'spike') {
-        let pBox = { x: player.x, y: player.y, w: player.w, h: player.h };
-        let sBox = { x: obs.x, y: obs.y - 10, w: obs.w, h: 18 };
-        if (rectCollision(pBox, sBox)) {
-          if (player.shield) {
-            player.shield = false;
-            player.invincible = true;
-            setTimeout(() => player.invincible = false, 1000);
-            spawnParticles(player.x + player.w/2, player.y, '#3498db', 15);
-          } else {
-            handleDeath();
-            return;
-          }
-        }
-      }
-    }
-  }
-
-  // Coin collection
-  for (const c of coins) {
-    if (!c.collected) {
-      let dx = (player.x + player.w/2) - c.x;
-      let dy = (player.y + player.h/2) - c.y;
-      let dist = Math.sqrt(dx*dx + dy*dy);
-      let collectDist = player.magnet ? 100 : 30;
-      if (dist < collectDist) {
-        if (player.magnet && dist > 30) {
-          c.x -= dx * 0.15;
-          c.y -= dy * 0.15;
-        }
-        if (dist < 28) {
-          c.collected = true;
-          game.coins++;
-          game.score += 10;
-          spawnParticles(c.x, c.y, '#f1c40f', 8);
-        }
-      }
-    }
-  }
-
-  // Fish collection
-  for (const f of fishes) {
-    if (!f.collected) {
-      let dx = (player.x + player.w/2) - f.x;
-      let dy = (player.y + player.h/2) - f.y;
-      if (Math.sqrt(dx*dx + dy*dy) < 28) {
-        f.collected = true;
-        game.score += 25;
-        spawnParticles(f.x, f.y, '#00cec9', 10);
-      }
-    }
-  }
-
-  // Powerup collection
-  for (const p of powerupItems) {
-    if (!p.collected) {
-      let dx = (player.x + player.w/2) - p.x;
-      let dy = (player.y + player.h/2) - p.y;
-      if (Math.sqrt(dx*dx + dy*dy) < 30) {
-        p.collected = true;
-        if (p.kind === 'shield') {
-          player.shield = true;
-          game.powerupTimers.shield = 600;
-        } else if (p.kind === 'speed') {
-          player.speedBoost = true;
-          game.powerupTimers.speed = 480;
-        } else if (p.kind === 'magnet') {
-          player.magnet = true;
-          game.powerupTimers.magnet = 400;
-        }
-        spawnParticles(p.x, p.y, '#e74c3c', 12);
-      }
-    }
-  }
-
-  // Powerup timers
-  for (const key in game.powerupTimers) {
-    game.powerupTimers[key]--;
-    if (game.powerupTimers[key] <= 0) {
-      delete game.powerupTimers[key];
-      if (key === 'shield') player.shield = false;
-      if (key === 'speed') player.speedBoost = false;
-      if (key === 'magnet') player.magnet = false;
-    }
-  }
-
-  // Monster chase
-  monster.x += monster.speed * 0.95;
-  if (monster.x > player.x - 28) {
-    if (player.shield) {
-      player.shield = false;
-      player.invincible = true;
-      setTimeout(() => player.invincible = false, 1500);
-      monster.x = player.x - 100;
-      spawnParticles(player.x, player.y, '#3498db', 20);
-    } else {
-      handleDeath();
-      return;
-    }
-  }
-
-  // Hut reached
-  if (player.x >= game.endX) {
-    game.hutReached = true;
-    game.hutAnimTimer = 180;
-    game.score += 100;
-  }
-
-  // Hut animation
-  if (game.hutReached) {
-    game.hutAnimTimer--;
-    if (game.hutAnimTimer <= 0) {
-      nextLevel();
-    }
-  }
-
-  // Camera
-  game.cameraX = player.x - 200;
-
-  // Particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.15;
-    p.life--;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-
-  // Update HUD
-  updateHUD();
-}
-
-// === DRAW ===
-function draw() {
-  const theme = LEVEL_THEMES[game.level];
-  const GROUND_Y = 480;
-
-  // Background
-  const grad = ctx.createLinearGradient(0, 0, 0, 600);
-  grad.addColorStop(0, theme.bg1);
-  grad.addColorStop(1, theme.bg2);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 800, 600);
-
-  // Stars
-  if (game.level >= 8) {
-    const time = Date.now() / 1000;
-    for (const s of stars) {
-      let sx = ((s.x - game.cameraX * 0.3) % 800 + 800) % 800;
-      let alpha = 0.5 + 0.5 * Math.sin(time * 2 + s.twinkle);
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.beginPath();
-      ctx.arc(sx, s.y, s.size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  ctx.save();
-  ctx.translate(-game.cameraX, 0);
-
-  // Ground
-  ctx.fillStyle = theme.ground;
-  ctx.fillRect(game.cameraX, GROUND_Y, 800, 120);
-
-  // Ground detail
-  ctx.fillStyle = 'rgba(255,255,255,0.05)';
-  for (let gx = Math.floor(game.cameraX / 40) * 40; gx < game.cameraX + 840; gx += 40) {
-    ctx.fillRect(gx, GROUND_Y, 2, 120);
-  }
-
-  // Obstacles
-  for (const obs of obstacles) {
-    if (obs.x + obs.w < game.cameraX - 50 || obs.x > game.cameraX + 850) continue;
-
-    if (obs.type === 'ceiling') {
-      ctx.fillStyle = '#636e72';
-      ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-      ctx.fillStyle = '#b2bec3';
-      ctx.fillRect(obs.x, obs.y, obs.w, 3);
-    } else if (obs.type === 'bump') {
-      ctx.fillStyle = '#e17055';
-      ctx.beginPath();
-      ctx.arc(obs.x + obs.w/2, obs.y + obs.h, obs.w/2, Math.PI, 0);
-      ctx.fill();
-    } else if (obs.type === 'spike') {
-      ctx.fillStyle = '#d63031';
-      const spikes = Math.floor(obs.w / 12);
-      for (let i = 0; i < spikes; i++) {
-        ctx.beginPath();
-        ctx.moveTo(obs.x + i * 12, obs.y);
-        ctx.lineTo(obs.x + i * 12 + 6, obs.y - 18);
-        ctx.lineTo(obs.x + i * 12 + 12, obs.y);
-        ctx.fill();
-      }
-    } else if (obs.type === 'float') {
-      ctx.fillStyle = '#636e72';
-      ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-      ctx.fillStyle = '#b2bec3';
-      ctx.fillRect(obs.x, obs.y, obs.w, 3);
-      // support lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(obs.x + 10, obs.y);
-      ctx.lineTo(obs.x + 10, obs.y - 60);
-      ctx.moveTo(obs.x + obs.w - 10, obs.y);
-      ctx.lineTo(obs.x + obs.w - 10, obs.y - 60);
-      ctx.stroke();
-    }
-  }
-
-  // Coins
-  const time = Date.now() / 500;
-  for (const c of coins) {
-    if (c.collected || c.x < game.cameraX - 50 || c.x > game.cameraX + 850) continue;
-    const bobY = c.y + Math.sin(time + c.x) * 4;
-    ctx.font = '20px serif';
-    ctx.fillText('🪙', c.x - 10, bobY);
-  }
-
-  // Fishes
-  for (const f of fishes) {
-    if (f.collected || f.x < game.cameraX - 50 || f.x > game.cameraX + 850) continue;
-    const bobY = f.y + Math.sin(time
+/* ==================== STATE ==================== */
+let cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+let L=null,player,monster
