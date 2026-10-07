@@ -46,7 +46,7 @@ canvas{display:block;background:#0a0e17;touch-action:none;box-shadow:0 0 40px rg
 .lb{list-style:none;text-align:right;margin-top:10px;max-height:240px;overflow:auto}
 .lb li{display:flex;justify-content:space-between;gap:8px;padding:9px 12px;margin-bottom:6px;
  background:rgba(255,255,255,.05);border-radius:10px;font-size:14px;border-right:3px solid #a55eea}
-.lb li:nth-child(1){border-color:#ffd166}.lb li:nth-child(2){border-color:#cfd8dc}.lb li:nth-child(3){border-color:#e07a2f}
+.lb li:nth-child(1){border-color:#ffd166}.lb li:nth-child(2){border-color:#cfd8dc}.lb li:nth-child(3){border-color:##e07a2f}
 input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);
  background:rgba(0,0,0,.35);color:#fff;font-size:16px;text-align:center;margin-top:8px}
 
@@ -151,10 +151,11 @@ input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,2
 
 <script>
 "use strict";
+
 /* ==================== CONFIG ==================== */
 const MONSTERS=[
  {n:"ذئب",e:"🐺",c:"#8d99ae",sp:1.55},{n:"ثعلب",e:"🦊",c:"#e07a2f",sp:1.75},
- {n:"كلب بري",e:"🐕",c:"#9c6b3f",sp:1.95},{n:"نمر",e:"🐆",c:"#e8b21f",sp:2.15},
+ {n:"كلb بري",e:"🐕",c:"#9c6b3f",sp:1.95},{n:"نمر",e:"🐆",c:"#e8b21f",sp:2.15},
  {n:"دب",e:"🐻",c:"#5b4636",sp:2.30},{n:"تمساح",e:"🐊",c:"#3f7d4e",sp:2.45},
  {n:"قرش",e:"🦈",c:"#4a6fa5",sp:2.60},{n:"غول مستنقع",e:"🧌",c:"#5c6b3c",sp:2.75},
  {n:"غول كهف",e:"👺",c:"#6b4f8a",sp:2.90},{n:"شبح",e:"👻",c:"#b8c0d8",sp:3.05},
@@ -172,4 +173,314 @@ const W=900,H=520,GY=430,GRAV=.62,JUMP=-12.8,BASE=4.6;
 
 /* ==================== STATE ==================== */
 let cv=document.getElementById("cv"),ctx=cv.getContext("2d");
-let L=null,player,monster
+let L={score:0,coins:0,lives:3,level:1,gameSpeed:BASE,active:false,over:false,frame:0};
+let player,obstacles,pickups,cabin,monster;
+
+/* ==================== INIT ==================== */
+function resize(){
+ let r=W/H;let w=innerWidth,h=innerHeight;
+ if(w/h>r)w=h*r;else h=w/r;
+ cv.width=W;cv.height=H;
+ cv.style.width=w+"px";cv.style.height=h+"px";
+}
+addEventListener("resize",resize);resize();
+
+/* ==================== PLAYER ==================== */
+function newPlayer(){
+ return {x:120,y:GY,w:40,h:40,vx:0,vy:0,jumping:false,ducking:false,inv:0};
+}
+
+/* ==================== LEVEL ==================== */
+function startLevel(lvl){
+ L.level=lvl;L.frame=0;
+ monster=MONSTERS[lvl-1];
+ player=newPlayer();
+ obstacles=[];pickups=[];cabin={x:W-120,y:GY-60,w:80,h:60,active:true};
+ // Generate obstacles
+ for(let i=0;i<8+lvl*2;i++){
+  let x=W+200+i*(250+Math.random()*200);
+  let type=Math.random()<0.4?"spike":"crate";
+  obstacles.push({x:x,y:type==="spike"?GY-20:GY-30,w:30,h:30,type:type});
+ }
+ // Generate pickups
+ for(let i=0;i<5+lvl;i++){
+  let x=400+i*(300+Math.random()*150);
+  let type=Math.random()<0.3?"power":"fish";
+  pickups.push({x:x,y:GY-60-Math.random()*80,w:24,h:24,type:type,collected:false});
+ }
+}
+
+/* ==================== INPUT ==================== */
+let keys={};
+addEventListener("keydown",e=>{
+ if(e.key==="ArrowUp"||e.key==="w")doJump();
+ if(e.key==="ArrowDown"||e.key==="s")doDuck();
+});
+addEventListener("keyup",e=>{
+ if(e.key==="ArrowDown"||e.key==="s")player.ducking=false;
+});
+
+// Touch
+let touchLeft=false,touchRight=false;
+document.getElementById("tJump").addEventListener("touchstart",e=>{e.preventDefault();doJump();});
+document.getElementById("tDuck").addEventListener("touchstart",e=>{e.preventDefault();doDuck();});
+
+function doJump(){
+ if(!player.jumping&&!player.ducking){player.vy=JUMP;player.jumping=true;}
+}
+function doDuck(){
+ if(!player.jumping)player.ducking=true;
+}
+
+/* ==================== PHYSICS ==================== */
+function updatePlayer(){
+ player.vy+=GRAV;
+ player.y+=player.vy;
+ if(player.y>=GY){player.y=GY;player.vy=0;player.jumping=false;}
+ if(player.y<=GY-60)player.h=player.ducking?20:40;
+ else player.h=40;
+ if(player.inv>0)player.inv--;
+}
+
+/* ==================== COLLISION ==================== */
+function rectCollide(a,b){
+ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+
+/* ==================== GAME LOOP ==================== */
+function update(){
+ if(!L.active||L.over)return;
+ L.frame++;
+ updatePlayer();
+ 
+ // Move obstacles
+ for(let o of obstacles){
+  o.x-=L.gameSpeed;
+  if(rectCollide(player,o)&&player.inv<=0){
+   hitPlayer();
+  }
+ }
+ 
+ // Move pickups
+ for(let p of pickups){
+  p.x-=L.gameSpeed;
+  if(!p.collected&&rectCollide(player,p)){
+   p.collected=true;
+   if(p.type==="fish")L.coins++;
+   if(p.type==="power"){player.inv=120;} // invincibility
+  }
+ }
+ 
+ // Check cabin
+ if(cabin.active&&rectCollide(player,cabin)){
+  winLevel();
+ }
+ 
+ // Remove off-screen
+ obstacles=obstacles.filter(o=>o.x>-50);
+ pickups=pickups.filter(p=>p.x>-50&&!p.collected);
+ 
+ // Score
+ if(L.frame%10===0)L.score++;
+ 
+ // Update HUD
+ document.getElementById("score").textContent=L.score;
+ document.getElementById("coins").textContent=L.coins;
+ document.getElementById("lives").textContent=L.lives;
+ document.getElementById("lvl").textContent=L.level+"/"+MONSTERS.length;
+ 
+ // Danger bar
+ let progress=Math.min(1,L.frame/1200);
+ document.getElementById("dangerBar").style.width=(progress*100)+"%";
+ 
+ // Next level?
+ if(cabin.active&&progress>=0.9){
+  cabin.active=false; // already handled by collision
+ }
+}
+
+function hitPlayer(){
+ L.lives--;
+ player.inv=60;
+ if(L.lives<=0){
+  gameOver();
+ }
+}
+
+function winLevel(){
+ if(L.level>=MONSTERS.length){
+  showScreen("sWin");
+  document.getElementById("winScore").textContent=L.score;
+ }else{
+  startLevel(L.level+1);
+ }
+}
+
+function gameOver(){
+ L.over=true;L.active=false;
+ showScreen("sOver");
+ document.getElementById("overScore").textContent=L.score;
+ document.getElementById("overLvl").textContent=L.level;
+ document.getElementById("overWho").textContent="قبض عليك " + monster.n;
+}
+
+/* ==================== RENDER ==================== */
+function draw(){
+ // Clear
+ ctx.fillStyle=THEMES[L.level-1][0];
+ ctx.fillRect(0,0,W,H);
+ 
+ // Ground
+ ctx.fillStyle=THEMES[L.level-1][1];
+ ctx.fillRect(0,GY,W,H-GY);
+ 
+ // Draw monster (chasing behind)
+ ctx.font="60px serif";
+ ctx.fillText(monster.e,20,GY-20);
+ 
+ // Draw player
+ if(player.inv%6<4){
+  ctx.font="40px serif";
+  ctx.fillText("🐱",player.x,player.y-player.h+5);
+ }
+ 
+ // Draw obstacles
+ for(let o of obstacles){
+  if(o.type==="spike"){
+   ctx.fillStyle="#e74c3c";
+   ctx.beginPath();
+   ctx.moveTo(o.x+o.w/2,o.y);
+   ctx.lineTo(o.x,o.y+o.h);
+   ctx.lineTo(o.x+o.w,o.y+o.h);
+   ctx.fill();
+  }else{
+   ctx.fillStyle="#8b4513";
+   ctx.fillRect(o.x,o.y,o.w,o.h);
+  }
+ }
+ 
+ // Draw pickups
+ for(let p of pickups){
+  if(!p.collected){
+   ctx.font="24px serif";
+   ctx.fillText(p.type==="fish"?"🐟":"⚡",p.x,p.y+20);
+  }
+ }
+ 
+ // Draw cabin
+ if(cabin.active){
+  ctx.font="60px serif";
+  ctx.fillText("🏡",cabin.x,cabin.y+50);
+ }
+}
+
+function loop(){
+ update();
+ draw();
+ requestAnimationFrame(loop);
+}
+
+/* ==================== SCREENS ==================== */
+function showScreen(id){
+ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("show"));
+ document.getElementById(id).classList.add("show");
+ if(id==="sOver"||id==="sWin"){
+  document.getElementById("hud").style.display="none";
+  document.getElementById("touch").style.display="none";
+ }else if(id==="sStart"){
+  // show monster list
+  let ml=document.getElementById("mList");
+  ml.innerHTML="";
+  MONSTERS.forEach(m=>{
+   let d=document.createElement("div");d.className="mchip";
+   d.textContent=m.e+" "+m.n;ml.appendChild(d);
+  });
+ }
+}
+
+/* ==================== LEADERBOARD ==================== */
+function getLeaderboard(){
+ try{return JSON.parse(localStorage.getItem("catRunnerLB")||"[]");}catch(e){return[];}
+}
+function saveToLeaderboard(name,score){
+ let lb=getLeaderboard();
+ lb.push({name:name,score:score,date:new Date().toLocaleDateString("ar")});
+ lb.sort((a,b)=>b.score-a.score);
+ lb=lb.slice(0,10);
+ localStorage.setItem("catRunnerLB",JSON.stringify(lb));
+ renderLeaderboard();
+}
+function renderLeaderboard(){
+ let lb=getLeaderboard();
+ let list=document.getElementById("lbList");
+ list.innerHTML="";
+ if(lb.length===0){
+  list.innerHTML="<li style='text-align:center;color:#8a93ab'>لا توجد نقاط بعد 🎮</li>";
+  return;
+ }
+ lb.forEach((entry,i)=>{
+  let li=document.createElement("li");
+  li.innerHTML=`<span>${i+1}. ${entry.name}</span><span>${entry.score} نقطة</span>`;
+  list.appendChild(li);
+ });
+}
+
+/* ==================== BUTTONS ==================== */
+document.getElementById("btnPlay").onclick=()=>{
+ L={score:0,coins:0,lives:3,level:1,gameSpeed:BASE,active:true,over:false,frame:0};
+ startLevel(1);
+ showScreen("game");
+ document.getElementById("hud").style.display="flex";
+ document.getElementById("touch").style.display="flex";
+};
+
+document.getElementById("btnLB").onclick=()=>{
+ renderLeaderboard();
+ showScreen("sLB");
+};
+
+document.getElementById("btnSave").onclick=()=>{
+ let name=document.getElementById("playerName").value.trim();
+ if(name){
+  saveToLeaderboard(name,L.score);
+  alert("تم الحفظ! 🏅");
+  document.getElementById("playerName").value="";
+ }
+};
+
+document.getElementById("btnRetry").onclick=()=>{
+ L={score:0,coins:0,lives:3,level:1,gameSpeed:BASE,active:true,over:false,frame:0};
+ startLevel(1);
+ showScreen("game");
+ document.getElementById("hud").style.display="flex";
+ document.getElementById("touch").style.display="flex";
+};
+
+document.getElementById("btnSaveWin").onclick=()=>{
+ let name=document.getElementById("winName").value.trim();
+ if(name){
+  saveToLeaderboard(name,L.score);
+  alert("تم الحفظ يا بطل! 🥇");
+  document.getElementById("winName").value="";
+ }
+};
+
+document.getElementById("btnAgain").onclick=()=>{
+ L={score:0,coins:0,lives:3,level:1,gameSpeed:BASE,active:true,over:false,frame:0};
+ startLevel(1);
+ showScreen("game");
+ document.getElementById("hud").style.display="flex";
+ document.getElementById("touch").style.display="flex";
+};
+
+document.getElementById("btnBack").onclick=()=>{
+ showScreen("sStart");
+};
+
+// Start
+showScreen("sStart");
+loop();
+
+</script>
+</body>
+</html>
